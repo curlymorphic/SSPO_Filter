@@ -1,18 +1,6 @@
-
-#pragma once
-#include <float.h>
-#include <math.h>
-#include <cmath>
-#include <algorithm>
-#include <vector>
-#include <string>
-
-
-
 /*
- * Copyright (c) 2014-2015 Dave French <contact/dot/dave/dot/french3/at/googlemail/dot/com>
+ * Copyright (c) 2019 Dave French <contact/dot/dave/dot/french3/at/googlemail/dot/com>
  *
- * This file is part of curlymorphic-sspo - 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public
@@ -32,6 +20,13 @@
  */
 
 #pragma once
+#include <float.h>
+#include <math.h>
+#include <cmath>
+#include <algorithm>
+#include <vector>
+#include <string>
+
 #include "AudioProcess.h"
 
 
