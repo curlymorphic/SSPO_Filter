@@ -27,14 +27,7 @@
 typedef AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
-class SspoLookAndFeel : public LookAndFeel_V4
-{
-public:
-	SspoLookAndFeel()
-	{
-		setColour(Slider::thumbColourId, Colours::red);
-	}
-};
+
 
 
 //==============================================================================

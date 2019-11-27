@@ -20,3 +20,65 @@
  */
 
 #include "SspoLookAndFeel.h"
+
+SspoLookAndFeel::SspoLookAndFeel() : LookAndFeel_V4()
+{
+	setColour(Slider::thumbColourId, Colours::red);
+}
+
+void SspoLookAndFeel::drawRotarySlider(Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, Slider& slider)
+{
+	auto radius = jmin(width / 2, height / 2) - 4.0f;
+	auto centreX = x + width * 0.5f;
+	auto centreY = y + height * 0.5f;
+	auto rx = centreX - radius * 0.7f;
+	auto ry = centreY - radius * 0.7f;
+	auto rw = radius * 1.4f;
+	auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
+
+	//draw markings
+	auto markLength = radius * 0.1f;
+	auto markThickness = 1.0f;
+	auto divisionRotation = (rotaryEndAngle - rotaryStartAngle) * 0.1f;
+	g.setColour(Colours::whitesmoke);
+	for (auto i = 0; i <= 10; ++i)
+	{
+		Path markPath;
+		markPath.addRectangle(-markThickness * 0.5f, -radius, markThickness, markLength);
+		markPath.applyTransform(AffineTransform::rotation(rotaryStartAngle + divisionRotation * i).translated(centreX, centreY));
+		g.fillPath(markPath);
+	}
+
+
+	//draw knob
+	g.setColour(Colours::antiquewhite);
+	g.fillEllipse(rx, ry, rw, rw);
+
+	//draw outline
+	g.setColour(Colours::black);
+	g.drawEllipse(rx, ry, rw, rw, rw*0.1f);
+
+	//create the pointer
+	Path linePath;
+	Path triPath;
+	auto pointerLength = radius * 0.3f;
+	auto pointerThickness = 2.0f;
+	linePath.addRectangle(-pointerThickness * 0.5f, -radius, pointerThickness, pointerLength);
+	triPath.addTriangle(0, -radius, pointerLength, -radius + pointerLength, -pointerLength, -radius + pointerLength);
+	//rotate pointer
+	linePath.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
+	triPath.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
+	g.setColour(Colours::black);
+	g.fillPath(triPath);
+	g.setColour(Colours::antiquewhite);
+	g.fillPath(linePath);
+}
+
+Label* SspoLookAndFeel::createSliderTextBox(Slider& slider)
+{
+	auto l = LookAndFeel_V4::createSliderTextBox(slider);
+
+	l->setColour(Label::outlineWhenEditingColourId, Colours::transparentBlack);
+	l->setColour(Label::outlineColourId, Colours::transparentBlack);
+	return l;
+}

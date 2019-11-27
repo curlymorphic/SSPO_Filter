@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="OLDSXz" name="SSPO_Filter" projectType="audioplug" jucerVersion="5.4.5"
               version="0.01" companyName="Studio Six Plus 1" pluginFormats="buildVST3"
-              pluginVST3Category="Filter">
+              pluginVST3Category="Filter" reportAppUsage="0" displaySplashScreen="0">
   <MAINGROUP id="puwe9G" name="SSPO_Filter">
     <GROUP id="{2D1A1011-FEFC-54CE-B088-6CD6AFF91115}" name="dsp">
       <FILE id="dMst2l" name="AudioMath.h" compile="0" resource="0" file="Source/dsp/AudioMath.h"/>

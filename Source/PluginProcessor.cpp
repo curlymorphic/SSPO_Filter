@@ -48,16 +48,17 @@ Sspo_filterAudioProcessor::Sspo_filterAudioProcessor() : parameters(*this, nullp
 		m_filters.push_back(new MultiFilter());
 	}
 
-	auto r = NormalisableRange<float>(50.0f, 20000.0f);
-	r.setSkewForCentre(440);
+	auto cutoffRange = NormalisableRange<float>(20.0f, 20000.0f, 1.0f);
+	cutoffRange.setSkewForCentre(1000);
+	auto resRange = NormalisableRange<float>(0.001f, 5.0f, 0.001f);
 	auto gainRange = NormalisableRange<float>(-30.0f, +30.0f, 0.001f);
 	gainRange.setSkewForCentre(1.0);
 
 	StringArray filterTypes;
 	for (auto s : MultiFilter::TYPES()) filterTypes.add(s);
 
-	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("cutoff", "Cutoff", r, 20000));
-	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("res", "Resonance", 0.01, 5.0, 0.75));
+	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("cutoff", "Cutoff", cutoffRange, 20000));
+	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("res", "Resonance", resRange, 0.707));
 	parameters.createAndAddParameter(std::make_unique<AudioParameterChoice>("type", "Filter Type", filterTypes, 0));
 	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("gain", "Gain", gainRange, 1.0));
 	resParameter = parameters.getRawParameterValue("res");
