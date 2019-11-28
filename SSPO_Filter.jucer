@@ -25,6 +25,7 @@
             file="Source/PluginEditor.cpp"/>
       <FILE id="ithIKR" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
     </GROUP>
+    <FILE id="ZDYamX" name="COPYING" compile="0" resource="0" file="Source/COPYING"/>
     <FILE id="XOpCCK" name="curlymorphic_sspo.cpp" compile="1" resource="0"
           file="Source/curlymorphic_sspo.cpp"/>
     <FILE id="djoAuc" name="curlymorphic_sspo.h" compile="0" resource="0"
