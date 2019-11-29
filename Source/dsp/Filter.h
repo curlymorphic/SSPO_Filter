@@ -20,12 +20,13 @@
  */
 
 #pragma once
+#include <algorithm>
+#include <cmath>
 #include <float.h>
 #include <math.h>
-#include <cmath>
-#include <algorithm>
-#include <vector>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "AudioProcess.h"
 
@@ -62,19 +63,18 @@ public:
 		m_b1 = b1;
 	}
 
-
 protected:
 
-	float m_z1 = 0;
-	float m_a0 = 0.5f;
-	float m_b1 = -0.50f;
+	float m_z1{ 0.0f };
+	float m_a0{ 0.5f };
+	float m_b1{ -0.5f };
 };
-
 
 
 ///
 /// \brief The BiQuad class
-/// Standard BiQuad implementation. base class for filters
+/// Transposed Canonical Form  BiQuad implementation. base class for various filters
+/// based on the block diagram in Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle p249
 class BiQuad
 {
 public:
@@ -84,42 +84,47 @@ public:
 	}
 	virtual ~BiQuad() {}
 
-	inline void setCoeffs(float a1, float a2, float b0, float b1, float b2)
+	inline void setCoeffs(float a0, float a1, float a2, float b1, float b2, float c0, float d0)
 	{
+		m_a0 = a0;
 		m_a1 = a1;
 		m_a2 = a2;
-		m_b0 = b0;
 		m_b1 = b1;
 		m_b2 = b2;
+		m_c0 = c0;
+		m_d0 = d0;
 	}
+
 	inline void clear()
 	{
 		m_z1 = 0.0f;
 		m_z2 = 0.0f;
 	}
-	virtual inline float tick(float in)
-	{
-		// biquad filter in transposed form
-		const float out = m_z1 + m_b0 * in;
-		m_z1 = m_b1 * in + m_z2 - m_a1 * out;
-		m_z2 = m_b2 * in - m_a2 * out;
-		return out;
-	}
-protected:
-	float m_a1, m_a2, m_b0, m_b1, m_b2;
-	float m_z1, m_z2;
 
+	inline float tick(float in)
+	{
+		float out = m_z1 + m_a0 * in;
+		//check denormal
+		if (!isnormal(out)) out = 0.0f;
+		m_z1 = m_a1 * in + m_z2 - m_b1 * out;
+		m_z2 = m_a2 * in - m_b2 * out;
+		return out * m_c0 + in * m_d0;
+	}
+
+protected:
+	float m_b1, m_b2, m_a0, m_a1, m_a2;
+	float m_c0, m_d0;
+	float m_z1, m_z2;
 };
 
 
 
 
 ///
-/// \brief The EqFilter class.
-/// A wrapper for the various filter classes, giving it freq, res, and gain controls.
-/// It is designed to process periods in one pass, with recalculation of coefficents
-/// upon parameter changes. The intention is to use this as a bass class, children override
-/// the calcCoefficents() function, providing the coefficents a1, a2, b0, b1, b2.
+/// \brief The Filter class.
+/// A wrapper for the various filter classes, having freq, Q, and gain controls.
+/// The intention is to use this as a bass class, children override
+/// the calcCoefficents() and clear() functions
 ///
 class Filter : public AudioProcess
 {
@@ -131,89 +136,66 @@ public:
 
 	}
 
-
 	Filter(int samplerate) :
 		AudioProcess() {
-		sampleRate = samplerate;
+		m_sampleRate = samplerate;
 	}
 
-
-	virtual inline void setFrequency(float freq) {
-		if (freq != m_freq)
-		{
-			m_freq = bound(35.0f, freq, 20000.0f);
-			calcCoefficents();
-		}
+	virtual inline void setFrequency(float freq)
+	{
+		m_freq = bound(20.0f, freq, 20000.0f);
+		calcCoefficents();
 	}
 
 	virtual void clear() = 0;
 
-
 	virtual void setQ(float Q)
 	{
-		if (m_res != Q)
-		{
-			m_res = Q;
-			calcCoefficents();
-		}
-	}
 
+		m_Q = Q;
+		calcCoefficents();
+	}
 
 	virtual void setGain(float proposedGain)
 	{
-		if (m_gain != proposedGain)
-		{
-			m_gain = proposedGain;
-			calcCoefficents();
-		}
+		m_gain = proposedGain;
+		calcCoefficents();
 	}
 
 
-	virtual inline void setParameters(float freq, float Q, float proposedGain = 1.0)
+	virtual inline void setParameters(float freq, float Q, float gain = 1.0)
 	{
-		bool hasChanged = false;
-		if (freq != m_freq)
-		{
-			m_freq = bound(55.0f, freq, 20000.0f);
-			hasChanged = true;
-		}
-		if (m_res != Q)
-		{
-			m_res = bound(0.6f, Q, 5.0f);
-			hasChanged = true;
-		}
-		if (m_gain != proposedGain)
-		{
-			m_gain = proposedGain;
-			hasChanged = true;
-		}
-
-		if (hasChanged) { calcCoefficents(); }
+		m_freq = bound(20.0f, freq, 20000.0f);
+		m_Q = bound(0.1f, Q, 20.0f);
+		m_gain = gain;
+		calcCoefficents();
 	}
 
 	void setSampleRate(int sr) override
 	{
-		sampleRate = sr;
+		m_sampleRate = sr;
 		calcCoefficents();
 	}
 
 	///
 	/// \brief calcCoefficents
 	///  Override this in child classes to provide the coefficents, based on
-	///  Freq, Res and Gain
+	///  m_freq, m_Q and m_gain
 	virtual void calcCoefficents() = 0;
 
 protected:
 
-
-	float m_freq = 440;
-	float m_res = 0.7f;
-	float m_gain = 0.0f;
+	float m_freq{ 440.0f };
+	float m_Q{ 0.707f };
+	float m_gain{ 0.0f };
 
 };
 
-
-class Lp6 : public Filter, public FirstOrderFeedBackFilter
+///
+/// \brief The Lp6 Filter class
+/// A 1 pole Low Pass Filter
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
+class Lp6 : public Filter, public BiQuad
 {
 public:
 	Lp6() : Filter()
@@ -230,56 +212,76 @@ public:
 
 	void clear() override
 	{
-		FirstOrderFeedBackFilter::clear();
+		BiQuad::clear();
 	}
 
 	void calcCoefficents() override
 	{
-		float theta = (2 * F_PI * m_freq) / sampleRate;
-		auto gamma = 2 - std::cos(theta);
-		m_b1 = std::sqrtf(gamma * gamma - 1) - gamma;
-		m_a0 = 1 + m_b1;
+		float theta = F_2PI * m_freq / m_sampleRate;
+		float c = cosf(theta);
+		float s = sinf(theta);
+		float gamma = c / (1 + s);
+		float a0 = (1 - gamma) * 0.5f;
+		float a1 = (1 - gamma) * 0.5f;
+		float a2 = 0.0f;
+		float b1 = -gamma;
+		float b2 = 0.0f;
+		float c0 = 1.0f;
+		float d0 = 0.0f;
+
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+	}
+};
+
+///
+/// \brief The Hp6 Filter class
+/// A 1 pole High Pass Filter
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
+class Hp6 : public Filter, public BiQuad
+{
+public:
+	Hp6() : Filter()
+	{}
+
+	Hp6(int sampleRate)
+		: Filter(sampleRate)
+	{}
+
+	float processSample(float in) override
+	{
+		return tick(in);
+	}
+
+	void clear() override
+	{
+		BiQuad::clear();
+	}
+
+	void calcCoefficents() override
+	{
+		float theta = F_2PI * m_freq / m_sampleRate;
+		float c = cosf(theta);
+		float s = sinf(theta);
+		float gamma = c / (1 + s);
+		float a0 = (1 + gamma) * 0.5f;
+		float a1 = (1 + gamma) * -0.5f;
+		float a2 = 0.0f;
+		float b1 = -gamma;
+		float b2 = 0.0f;
+		float c0 = 1.0f;
+		float d0 = 0.0f;
+
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
 };
 
 
-//HP6 filter not working as intended
-
-//class Hp6 : public Filter, public FirstOrderFeedBackFilter
-//{
-//public:
-//	Hp6() : Filter()
-//	{}
-//
-//	Hp6(int sampleRate)
-//		: Filter(sampleRate)
-//	{}
-//
-//	float processSample(float in) override
-//	{
-//		return tick(in);
-//	}
-//
-//	void clear() override
-//	{
-//		FirstOrderFeedBackFilter::clear();
-//	}
-//
-//	void calcCoefficents() override
-//	{
-//		float theta = (2.0f * F_PI * m_freq) / sampleRate;
-//		auto gamma = 2.0f + std::cosf(theta);
-//		m_b1 = gamma - std::sqrtf(gamma * gamma - 1.0f);
-//		m_a0 = 1.0f - m_b1;
-//	}
-//};
-
 
 ///
-/// \brief The EqHp12Filter class
+/// \brief The Hp12 Filter class
 /// A 2 pole High Pass Filter
-/// Coefficent calculations from http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
-class Hp12 : public Filter , public BiQuad
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
+class Hp12 : public Filter, public BiQuad
 {
 public:
 
@@ -304,45 +306,32 @@ public:
 
 	void calcCoefficents() override
 	{
+		float theta = F_2PI * m_freq / m_sampleRate;
+		float c = cosf(theta);
+		float s = sinf(theta);
+		float d = 1.0f / m_Q;
+		float beta = 0.5f * ((1 - 0.5f * d * s) / (1 + 0.5f * d * s));
+		float gamma = (0.5f + beta) * c;
 
-		// calc intermediate
-		float w0 = f_2PI * m_freq / sampleRate;
-		float c = cosf(w0);
-		float s = sinf(w0);
-		float alpha = s / (2 * m_res);
+		float a0 = (0.5f + beta + gamma) * 0.5f;
+		float a1 = -(0.5f + beta + gamma);
+		float a2 = (0.5f + beta + gamma) * 0.5f;
+		float b1 = -2.0f * gamma;
+		float b2 = 2.0f * beta;
+		float c0 = 1.0f;
+		float d0 = 0.0f;
 
-		float a0, a1, a2, b0, b1, b2; // coeffs to calculate
-
-		//calc coefficents
-		b0 = (1 + c) * 0.5f;
-		b1 = (-(1 + c));
-		b2 = (1 + c) * 0.5f;
-		a0 = 1 + alpha;
-		a1 = (-2 * c);
-		a2 = 1 - alpha;
-
-		//normalise
-		b0 /= a0;
-		b1 /= a0;
-		b2 /= a0;
-		a1 /= a0;
-		a2 /= a0;
-
-		a0 = 1;
-
-		setCoeffs(a1, a2, b0, b1, b2);
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
-
-
 };
 
 
 
 
 ///
-/// \brief The EqLp12Filter class.
+/// \brief The Lp12 Filter class.
 /// A 2 pole low pass filter
-/// Coefficent calculations from http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
 ///
 class Lp12 : public Filter, public BiQuad
 {
@@ -352,6 +341,11 @@ public:
 	{
 	}
 
+	Lp12(int samplerate) :
+		Filter(samplerate)
+	{
+	}
+
 	float processSample(float in) override
 	{
 		return tick(in);
@@ -364,43 +358,121 @@ public:
 
 	void calcCoefficents() override
 	{
+		float theta = F_2PI * m_freq / m_sampleRate;
+		float c = cosf(theta);
+		float s = sinf(theta);
+		float d = 1.0f / m_Q;
+		float beta = 0.5f * ((1 - 0.5f * d * s) / (1 + 0.5f * d * s));
+		float gamma = (0.5f + beta) * c;
 
-		// calc intermediate
-		float w0 = f_2PI * m_freq / sampleRate;
-		float c = cosf(w0);
-		float s = sinf(w0);
-		float alpha = s / (2 * m_res);
+		float a0 = (0.5f + beta - gamma) * 0.5f;
+		float a1 = 0.5f + beta - gamma;
+		float a2 = (0.5f + beta - gamma) * 0.5f;
+		float b1 = -2.0f * gamma;
+		float b2 = 2.0f * beta;
+		float c0 = 1.0f;
+		float d0 = 0.0f;
 
-		float a0, a1, a2, b0, b1, b2; // coeffs to calculate
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+	}
+};
 
-		//calc coefficents
-		b0 = (1 - c) * 0.5f;
-		b1 = 1 - c;
-		b2 = (1 - c) * 0.5f;
-		a0 = 1 + alpha;
-		a1 = -2 * c;
-		a2 = 1 - alpha;
+///
+/// \brief The Bp12 Filter class.
+/// A 2 pole band pass filter
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
+///
+class Bp12 : public Filter, public BiQuad
+{
+public:
+	Bp12() :
+		Filter()
+	{
+	}
 
-		//normalise
-		b0 /= a0;
-		b1 /= a0;
-		b2 /= a0;
-		a1 /= a0;
-		a2 /= a0;
+	Bp12(int samplerate) :
+		Filter(samplerate)
+	{
+	}
 
-		a0 = 1;
+	float processSample(float in) override
+	{
+		return tick(in);
+	}
 
-		setCoeffs(a1, a2, b0, b1, b2);
+	void clear() override
+	{
+		BiQuad::clear();
+	}
+
+	void calcCoefficents() override
+	{
+		float K = tanf((F_PI * m_freq) / m_sampleRate);
+		float delta = K * K * m_Q + K + m_Q;
+
+		float a0 = K / delta;
+		float a1 = 0.0;
+		float a2 = -K / delta;
+		float b1 = (2.0f * m_Q * (K * K - 1)) / delta;
+		float b2 = (K * K * m_Q - K + m_Q) / delta;
+		float c0 = 1.0f;
+		float d0 = 0.0f;
+
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+	}
+};
+
+///
+/// \brief The Bs12 Filter class.
+/// A 2 pole band stop filter
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
+///
+class Bs12 : public Filter, public BiQuad
+{
+public:
+	Bs12() :
+		Filter()
+	{
+	}
+
+	Bs12(int samplerate) :
+		Filter(samplerate)
+	{
+	}
+
+	float processSample(float in) override
+	{
+		return tick(in);
+	}
+
+	void clear() override
+	{
+		BiQuad::clear();
+	}
+
+	void calcCoefficents() override
+	{
+		float K = tanf((F_PI * m_freq) / m_sampleRate);
+		float delta = K * K * m_Q + K + m_Q;
+
+		float a0 = (m_Q * (K * K + 1)) / delta;
+		float a1 = (2.0f * m_Q * (K * K - 1)) / delta;
+		float a2 = (m_Q * (K * K + 1)) / delta;
+		float b1 = (2.0f * m_Q * (K * K - 1)) / delta;
+		float b2 = (K * K * m_Q - K + m_Q) / delta;
+		float c0 = 1.0f;
+		float d0 = 0.0f;
+
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
 };
 
 
 
 ///
-/// \brief The EqPeakFilter class
-/// A Peak Filter
-/// Coefficent calculations from http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
-///
+/// \brief The PeakFilter class
+/// A 2 pole Peak Pass Filter
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
 class PeakFilter : public Filter, public BiQuad
 {
 public:
@@ -409,6 +481,11 @@ public:
 	{
 	}
 
+	PeakFilter(int samplerate) :
+		Filter(samplerate)
+	{
+	}
+
 	float processSample(float in) override
 	{
 		return tick(in);
@@ -422,38 +499,31 @@ public:
 
 	void calcCoefficents() override
 	{
-		// calc intermediate
-		float w0 = f_2PI * m_freq / sampleRate;
-		float c = cosf(w0);
-		float s = sinf(w0);
-		float A = powf(10, m_gain * 0.025f);
-		float alpha = s / (2 * m_res);
+		float Q = fmax(1.0f, m_Q);
+		float theta = F_2PI * m_freq / m_sampleRate;
+		float mu = powf(10, m_gain / 20.0f);
+		float zeta = 4.0f / (1.0f + mu);
+		float beta = 0.5f * ((1 - zeta * tanf(theta / (2.0f * Q))) / (1 + zeta * tanf(theta / (2 * Q))));
+		float gamma = (0.5f + beta) * cosf(theta);
 
-		float a0, a1, a2, b0, b1, b2; // coeffs to calculate
+		float a0 = 0.5f - beta;
+		float a1 = 0.0;
+		float a2 = -(0.5f - beta);
+		float b1 = -2.0f * gamma;
+		float b2 = 2.0f * beta;
+		float c0 = mu - 1.0f;
+		float d0 = 1.0f;
 
-		//calc coefficents
-		b0 = 1 + alpha * A;
-		b1 = -2 * c;
-		b2 = 1 - alpha * A;
-		a0 = 1 + alpha / A;
-		a1 = -2 * c;
-		a2 = 1 - alpha / A;
-
-		//normalise
-		b0 /= a0;
-		b1 /= a0;
-		b2 /= a0;
-		a1 /= a0;
-		a2 /= a0;
-		a0 = 1;
-
-		setCoeffs(a1, a2, b0, b1, b2);
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
 };
 
 
 
-
+///
+/// \brief The LowShelf Filter class
+/// A Low Shelf Filter
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
 class LowShelf : public Filter, public BiQuad
 {
 public:
@@ -462,6 +532,11 @@ public:
 	{
 	}
 
+	LowShelf(int samplerate) :
+		Filter(samplerate)
+	{
+	}
+
 	float processSample(float in) override
 	{
 		return tick(in);
@@ -473,38 +548,28 @@ public:
 	}
 	void calcCoefficents() override
 	{
+		float theta = F_2PI * m_freq / m_sampleRate;
+		float mu = powf(10, m_gain / 20.0f);
+		float beta = 4.0f / (1.0f + mu);
+		float delta = beta * tanf(theta * 0.5f);
+		float gamma = (1.0f - delta) / (1.0f + delta);
 
-		// calc intermediate
-		float w0 = f_2PI * m_freq / sampleRate;
-		float c = cosf(w0);
-		float s = sinf(w0);
-		float A = powf(10, m_gain * 0.025f);
-		//        float alpha = s / ( 2 * m_res );
-		float beta = sqrt(A) / m_res;
+		float a0 = (1.0f - gamma) * 0.5f;
+		float a1 = (1.0f - gamma) * 0.5f;
+		float a2 = 0.0f;
+		float b1 = -gamma;
+		float b2 = 0.0f;
+		float c0 = mu - 1.0f;
+		float d0 = 1.0f;
 
-		float a0, a1, a2, b0, b1, b2; // coeffs to calculate
-
-		//calc coefficents
-		b0 = A * ((A + 1) - (A - 1) * c + beta * s);
-		b1 = 2 * A * ((A - 1) - (A + 1) * c);
-		b2 = A * ((A + 1) - (A - 1) * c - beta * s);
-		a0 = (A + 1) + (A - 1) * c + beta * s;
-		a1 = -2 * ((A - 1) + (A + 1) * c);
-		a2 = (A + 1) + (A - 1) * c - beta * s;
-
-		//normalise
-		b0 /= a0;
-		b1 /= a0;
-		b2 /= a0;
-		a1 /= a0;
-		a2 /= a0;
-
-		a0 = 1;
-
-		setCoeffs(a1, a2, b0, b1, b2);
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
 };
 
+///
+/// \brief The HighShelf Filter class
+/// A  High Shelf Filter
+/// Coefficent calculations from Designing Audio Effects Plugins in c++ 2nd ed Will Pirkle
 class HighShelf : public Filter, public BiQuad
 {
 public:
@@ -513,6 +578,11 @@ public:
 	{
 	}
 
+	HighShelf(int samplerate) :
+		Filter(samplerate)
+	{
+	}
+
 	float processSample(float in) override
 	{
 		return tick(in);
@@ -525,82 +595,69 @@ public:
 
 	void calcCoefficents() override
 	{
+		float theta = F_2PI * m_freq / m_sampleRate;
+		float mu = powf(10, m_gain / 20.0f);
+		float beta = (1.0f + mu) / 4.0f;
+		float delta = beta * tanf(theta * 0.5f);
+		float gamma = (1.0f - delta) / (1.0f + delta);
 
-		// calc intermediate
-		float w0 = f_2PI * m_freq / sampleRate;
-		float c = cosf(w0);
-		float s = sinf(w0);
-		float A = powf(10, m_gain * 0.025f);
-		float beta = sqrt(A) / m_res;
+		float a0 = (1.0f + gamma) * 0.5f;
+		float a1 = (1.0f + gamma) * -0.5f;
+		float a2 = 0.0f;
+		float b1 = -gamma;
+		float b2 = 0.0f;
+		float c0 = mu - 1.0f;
+		float d0 = 1.0f;
 
-		float a0, a1, a2, b0, b1, b2; // coeffs to calculate
-
-		//calc coefficents
-		b0 = A * ((A + 1) + (A - 1) * c + beta * s);
-		b1 = -2 * A * ((A - 1) + (A + 1) * c);
-		b2 = A * ((A + 1) + (A - 1) * c - beta * s);
-		a0 = (A + 1) - (A - 1) * c + beta * s;
-		a1 = 2 * ((A - 1) - (A + 1) * c);
-		a2 = (A + 1) - (A - 1) * c - beta * s;
-		//normalise
-		b0 /= a0;
-		b1 /= a0;
-		b2 /= a0;
-		a1 /= a0;
-		a2 /= a0;
-		a0 = 1;
-
-		setCoeffs(a1, a2, b0, b1, b2);
+		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
 };
 
-/**
-Wrapper for chaining filters in series, passing function calls
-*/
+///
+/// \brief Wrapper for chaining filters in series
+
 class FilterChain : public Filter
 {
 public:
 	FilterChain()
 		: Filter() {}
 
-	~FilterChain() { for (auto f : m_filters) { delete f; } }
+	~FilterChain() {  }
 
-	void push_back(Filter* newFilter) { m_filters.push_back(newFilter); }
+	void push_back(std::unique_ptr<Filter> newFilter) { m_filters.push_back(std::move(newFilter)); }
 
-	inline void setFrequency(float freq) override { for (auto f : m_filters) { f->setFrequency(freq); } }
+	inline void setFrequency(float freq) override { for (auto& f : m_filters) { f->setFrequency(freq); } }
 
-	void setQ(float Q) override { for (auto f : m_filters) { f->setQ(Q); } }
+	void setQ(float Q) override { for (auto& f : m_filters) { f->setQ(Q); } }
 
-	void setGain(float proposedGain) override { for (auto f : m_filters) { f->setGain(proposedGain); } }
+	void setGain(float proposedGain) override { for (auto& f : m_filters) { f->setGain(proposedGain); } }
 
-	inline void setParameters(float freq, float Q, float proposedGain = 1.0) override
+	inline void setParameters(float freq, float Q, float gain = 0.0) override
 	{
-		for (auto f : m_filters) { f->setParameters(freq, Q, proposedGain); }
+		for (auto& f : m_filters) { f->setParameters(freq, Q, gain); }
 	}
 
 	inline float processSample(float in) override
 	{
 		float val = in;
-		for (auto f : m_filters) { val = f->processSample(val); }
+		for (auto& f : m_filters) { val = f->processSample(val); }
 		return val;
 	}
 
-	inline void clear() override { for (auto f : m_filters) { f->clear(); } }
+	inline void clear() override { for (auto& f : m_filters) { f->clear(); } }
 
 	void calcCoefficents() override
 	{
-		for (auto f : m_filters) { f->calcCoefficents(); }
+		for (auto& f : m_filters) { f->calcCoefficents(); }
 	}
 
 	void setSampleRate(int sr)
 	{
-		for (auto f : m_filters) { f->setSampleRate(sr); }
+		for (auto& f : m_filters) { f->setSampleRate(sr); }
 	}
 
 private:
-	std::vector<Filter*> m_filters;
-
-
+	std::vector<std::unique_ptr<Filter>> m_filters;
 };
 
 class Lp24 : public FilterChain
@@ -608,9 +665,9 @@ class Lp24 : public FilterChain
 public:
 	Lp24() : FilterChain()
 	{
-		push_back(new Lp12());
-		push_back(new Lp12());
-	}
+		push_back(std::unique_ptr<Filter> {new Lp12()});
+		push_back(std::unique_ptr<Filter> {new Lp12()});
+	};
 };
 
 class Hp24 : public FilterChain
@@ -618,8 +675,8 @@ class Hp24 : public FilterChain
 public:
 	Hp24() : FilterChain()
 	{
-		push_back(new Hp12(sampleRate));
-		push_back(new Hp12(sampleRate));
+		push_back(std::unique_ptr<Filter> {new Hp12()});
+		push_back(std::unique_ptr<Filter> {new Hp12()});
 	}
 };
 
@@ -628,75 +685,74 @@ class MultiFilter : public Filter
 {
 public:
 
-	static std::vector<std::string> TYPES()
+	static std::vector<std::string> typeStings()
 	{
-		return { "LP6", "LP12", "LP24", "HP12", "HP24", "Low Shelf", "High Shelf", "Peak" };
+		return { "LP6", "LP12", "LP24", "HP6", "HP12", "HP24", "Low Shelf", "High Shelf", "Peak", "BP12", "BS12" };
 	}
 
 	MultiFilter()
 	{
-		m_filters.push_back(new Lp6());
-		m_filters.push_back(new Lp12());
-		m_filters.push_back(new Lp24());
-		m_filters.push_back(new Hp12());
-		m_filters.push_back(new Hp24());
-		m_filters.push_back(new LowShelf());
-		m_filters.push_back(new HighShelf());
-		m_filters.push_back(new PeakFilter());
+		m_filters.push_back(std::unique_ptr<Filter> {new Lp6()});
+		m_filters.push_back(std::unique_ptr<Filter> {new Lp12()});
+		m_filters.push_back(std::unique_ptr<Filter> {new Lp24()});
+		m_filters.push_back(std::unique_ptr<Filter> {new Hp6()});
+		m_filters.push_back(std::unique_ptr<Filter> {new Hp12()});
+		m_filters.push_back(std::unique_ptr<Filter> {new Hp24()});
+		m_filters.push_back(std::unique_ptr<Filter> {new LowShelf()});
+		m_filters.push_back(std::unique_ptr<Filter> {new HighShelf()});
+		m_filters.push_back(std::unique_ptr<Filter> {new PeakFilter()});
+		m_filters.push_back(std::unique_ptr<Filter> {new Bp12()});
+		m_filters.push_back(std::unique_ptr<Filter> {new Bs12()});
 
-		setType(TYPES()[0]);
+		setType(typeStings()[0]);
 	}
 
 	~MultiFilter()
 	{
-		for (auto f : m_filters) { delete f; }
+		/*for (auto f : m_filters) { delete f; }*/
 	}
 
 	bool setType(std::string type)
 	{
-		for (auto i = 0; i < TYPES().size(); ++i)
+		for (auto i = 0; i < typeStings().size(); ++i)
 		{
-			if (type.compare(TYPES()[i]) == 0)
+			if (type.compare(typeStings()[i]) == 0)
 			{
-				m_currentFilter = m_filters[i];
-				m_currentFilter->setSampleRate(sampleRate);
-				m_currentFilter->calcCoefficents();
-				m_currentFilter->clear();
+				m_currentFilterIndex = i;
+				m_filters[i]->setSampleRate(m_sampleRate);
+				m_filters[i]->calcCoefficents();
+				m_filters[i]->clear();
 				return true;
 			}
 		}
 		return false;
 	}
 
-	inline void setFrequency(float freq) override { m_currentFilter->setFrequency(freq); }
+	inline void setFrequency(float freq) override { m_filters[m_currentFilterIndex]->setFrequency(freq); }
 
-	void setQ(float Q) override { m_currentFilter->setQ(Q); }
+	void setQ(float Q) override { m_filters[m_currentFilterIndex]->setQ(Q); }
 
-	void setGain(float proposedGain) override { m_currentFilter->setGain(proposedGain); }
+	void setGain(float proposedGain) override { m_filters[m_currentFilterIndex]->setGain(proposedGain); }
 
 	inline void setParameters(float freq, float Q, float proposedGain = 1.0) override
 	{
-		 m_currentFilter->setParameters(freq, Q, proposedGain); 
+		m_filters[m_currentFilterIndex]->setParameters(freq, Q, proposedGain);
 	}
 
 	inline float processSample(float in) override
 	{
-		return m_currentFilter->processSample(in);
+		return m_filters[m_currentFilterIndex]->processSample(in);
 	}
 
-	inline void clear() override { m_currentFilter->clear(); }
+	inline void clear() override { m_filters[m_currentFilterIndex]->clear(); }
 
 	void calcCoefficents() override
 	{
-		m_currentFilter->calcCoefficents();
+		m_filters[m_currentFilterIndex]->calcCoefficents();
 	}
 
-
-
 private:
-	std::vector<Filter*> m_filters;
-	Filter* m_currentFilter;
+	std::vector<std::unique_ptr<Filter>> m_filters;
+	//Filter* m_currentFilter;
+	int m_currentFilterIndex = 0;
 };
-
-
-

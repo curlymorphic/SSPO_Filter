@@ -35,7 +35,7 @@ public:
 
 	AudioProcess(int sr)
 	{
-		sampleRate = sr;
+		m_sampleRate = sr;
 	}
 
 	~AudioProcess()
@@ -43,7 +43,7 @@ public:
 
 	virtual void setSampleRate(int sr)
 	{
-		if ( sr > 0 ) sampleRate = sr;
+		if ( sr > 0 ) m_sampleRate = sr;
 	}
 
 	virtual float processSample(float in) = 0;
@@ -60,5 +60,5 @@ public:
 
 
 protected:
-	int sampleRate = 1;
+	int m_sampleRate = 1;
 };

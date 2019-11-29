@@ -45,22 +45,22 @@ Sspo_filterAudioProcessor::Sspo_filterAudioProcessor() : parameters(*this, nullp
 	auto channelCount = getTotalNumOutputChannels();
 	for (auto i = 0; i < channelCount; ++i)
 	{
-		m_filters.push_back(new MultiFilter());
+		m_filters.push_back(std::unique_ptr<MultiFilter>{ new MultiFilter() });
 	}
 
-	auto cutoffRange = NormalisableRange<float>(20.0f, 20000.0f, 1.0f);
-	cutoffRange.setSkewForCentre(1000);
-	auto resRange = NormalisableRange<float>(0.001f, 5.0f, 0.001f);
+	auto cutoffRange = NormalisableRange<float>(20.0f, 20000.0f, 0.1f);
+	cutoffRange.setSkewForCentre(440);
+	auto resRange = NormalisableRange<float>(0.001f, 20.0f, 0.001f);
 	auto gainRange = NormalisableRange<float>(-30.0f, +30.0f, 0.001f);
-	gainRange.setSkewForCentre(1.0);
+	gainRange.setSkewForCentre(0.0);
 
 	StringArray filterTypes;
-	for (auto s : MultiFilter::TYPES()) filterTypes.add(s);
+	for (auto s : MultiFilter::typeStings()) filterTypes.add(s);
 
-	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("cutoff", "Cutoff", cutoffRange, 20000));
-	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("res", "Resonance", resRange, 0.707));
+	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("cutoff", "Cutoff", cutoffRange, 20000.0f));
+	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("res", "Resonance", resRange, 0.707f));
 	parameters.createAndAddParameter(std::make_unique<AudioParameterChoice>("type", "Filter Type", filterTypes, 0));
-	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("gain", "Gain", gainRange, 1.0));
+	parameters.createAndAddParameter(std::make_unique<AudioParameterFloat>("gain", "Gain", gainRange, 0.0f));
 	resParameter = parameters.getRawParameterValue("res");
 	cutoffParameter = parameters.getRawParameterValue("cutoff");
 	typeParameter = parameters.getRawParameterValue("type");
@@ -75,7 +75,6 @@ Sspo_filterAudioProcessor::Sspo_filterAudioProcessor() : parameters(*this, nullp
 
 Sspo_filterAudioProcessor::~Sspo_filterAudioProcessor()
 {
-	for (auto f : m_filters) {delete f;}
 
 }
 
@@ -148,9 +147,9 @@ void Sspo_filterAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
 
-	for (auto f : m_filters)
+	for (auto& f : m_filters)
 	{ 
-		f->setType(MultiFilter::TYPES()[*typeParameter]);
+		f->setType(MultiFilter::typeStings()[*typeParameter]);
 		f->setSampleRate(sampleRate); 
 		f->setParameters(*cutoffParameter, *resParameter, *gainParameter);
 	}
@@ -216,7 +215,7 @@ void Sspo_filterAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBu
 		for (auto i = 0; i < buffer.getNumSamples(); ++i)
 		{
 			auto x = channelData[i];
-			auto f = m_filters.at(j);
+			auto& f = m_filters.at(j);
 			x = f->processSample(x);
 			channelData[i] = x;
 		}
@@ -255,14 +254,14 @@ void Sspo_filterAudioProcessor::parameterChanged(const String& parameterID, floa
 
 	if (parameterID.compare("type") == 0 )
 	{
-		for (auto f : m_filters)
+		for (auto& f : m_filters)
 		{
-			f->setType(MultiFilter::TYPES()[newValue]);
+			f->setType(MultiFilter::typeStings()[newValue]);
 			f->clear();
 		}
 	}
 
-	for (auto f : m_filters) { f->setParameters(*cutoffParameter, *resParameter, *gainParameter); }
+	for (auto& f : m_filters) { f->setParameters(*cutoffParameter, *resParameter, *gainParameter); }
 }
 
 //==============================================================================

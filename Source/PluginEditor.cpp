@@ -51,7 +51,7 @@ Sspo_filterAudioProcessorEditor::Sspo_filterAudioProcessorEditor (Sspo_filterAud
 
 	addAndMakeVisible(typeCombo);
 	StringArray filterTypes;
-	for (auto s : MultiFilter::TYPES()) filterTypes.add(s);
+	for (auto s : MultiFilter::typeStings()) filterTypes.add(s);
 	typeCombo.addItemList(filterTypes, 1);
 	typeCombo.setSelectedId(1);
 	typeAttachment.reset(new AudioProcessorValueTreeState::ComboBoxAttachment(valueTreeState, "type", typeCombo));

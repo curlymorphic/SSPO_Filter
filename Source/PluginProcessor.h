@@ -24,6 +24,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "curlymorphic_sspo.h"
 #include <vector>
+#include <memory>
 using namespace std;
 
 //==============================================================================
@@ -83,7 +84,7 @@ private:
 	float* gainParameter = nullptr;
 	
 
-	std::vector<MultiFilter*> m_filters;
+	std::vector<std::unique_ptr<MultiFilter>> m_filters;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sspo_filterAudioProcessor)
