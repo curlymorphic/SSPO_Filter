@@ -715,7 +715,6 @@ public:
 
 	~MultiFilter()
 	{
-		/*for (auto f : m_filters) { delete f; }*/
 	}
 
 	bool setType(std::string type)
@@ -724,41 +723,42 @@ public:
 		{
 			if (type.compare(typeStings()[i]) == 0)
 			{
-				m_currentFilterIndex = i;
 				m_filters[i]->setSampleRate(m_sampleRate);
 				m_filters[i]->calcCoefficents();
 				m_filters[i]->clear();
+				m_currentFilterIndex.store(i);
 				return true;
 			}
 		}
 		return false;
 	}
 
-	inline void setFrequency(float freq) override { m_filters[m_currentFilterIndex]->setFrequency(freq); }
+	inline void setFrequency(float freq) override { m_filters[m_currentFilterIndex.load()]->setFrequency(freq); }
 
-	void setQ(float Q) override { m_filters[m_currentFilterIndex]->setQ(Q); }
+	void setQ(float Q) override { m_filters[m_currentFilterIndex.load()]->setQ(Q); }
 
 	void setGain(float proposedGain) override { m_filters[m_currentFilterIndex]->setGain(proposedGain); }
 
 	inline void setParameters(float freq, float Q, float proposedGain = 1.0) override
 	{
-		m_filters[m_currentFilterIndex]->setParameters(freq, Q, proposedGain);
+		m_filters[m_currentFilterIndex.load()]->setParameters(freq, Q, proposedGain);
 	}
 
 	inline float processSample(float in) override
 	{
-		return m_filters[m_currentFilterIndex]->processSample(in);
+		return m_filters[m_currentFilterIndex.load()]->processSample(in);
 	}
 
-	inline void clear() override { m_filters[m_currentFilterIndex]->clear(); }
+	inline void clear() override { m_filters[m_currentFilterIndex.load()]->clear(); }
 
 	void calcCoefficents() override
 	{
-		m_filters[m_currentFilterIndex]->calcCoefficents();
+		m_filters[m_currentFilterIndex.load()]->calcCoefficents();
 	}
 
 private:
 	std::vector<std::unique_ptr<Filter>> m_filters;
 	//Filter* m_currentFilter;
-	int m_currentFilterIndex = 0;
+	std::atomic_int m_currentFilterIndex{ 0 };
+	static_assert (std::atomic_int::is_always_lock_free);
 };
