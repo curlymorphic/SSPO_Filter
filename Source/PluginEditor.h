@@ -33,7 +33,7 @@ typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 //==============================================================================
 /**
 */
-class Sspo_filterAudioProcessorEditor  : public AudioProcessorEditor
+class Sspo_filterAudioProcessorEditor  : public AudioProcessorEditor, public AudioProcessorValueTreeState::Listener, ImageButton::Listener
 {
 public:
     Sspo_filterAudioProcessorEditor (Sspo_filterAudioProcessor&);
@@ -55,6 +55,8 @@ private:
 	Slider resSlider;
 	Slider gainSlider;
 	ComboBox typeCombo;
+	Label gainLabel;
+	ImageButton gitHubSocialButton;
 	std::unique_ptr<SliderAttachment> cutoffAttachement;
 	std::unique_ptr<SliderAttachment> resAttachment;
 	std::unique_ptr<SliderAttachment> gainAttachment;
@@ -63,6 +65,12 @@ private:
 	SspoLookAndFeel sspoLookAndFeel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sspo_filterAudioProcessorEditor)
+
+		// Inherited via Listener
+		virtual void parameterChanged(const String& parameterID, float newValue) override;
+
+	// Inherited via Listener
+	virtual void buttonClicked(Button*) override;
 };
 
 

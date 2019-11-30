@@ -72,6 +72,8 @@ public:
 
 	AudioProcessorValueTreeState parameters;
 
+	bool getFilterUseQ(int index);
+	bool getFilterUseGain(int index);
 	
 
 private:

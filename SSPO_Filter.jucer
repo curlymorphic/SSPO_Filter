@@ -33,6 +33,8 @@
           file="Source/curlymorphic_sspo.h"/>
     <FILE id="L30PKk" name="NonRealtimeMutatable.hpp" compile="0" resource="0"
           file="Source/farbot/NonRealtimeMutatable.hpp"/>
+    <FILE id="tno1VI" name="GitHub-Mark-32px.png" compile="0" resource="1"
+          file="C:/Users/davef/Downloads/GitHub-Mark/GitHub-Mark/PNG/GitHub-Mark-32px.png"/>
     <FILE id="UV5tCJ" name="NonRealtimeMutatable.tcc" compile="0" resource="1"
           file="Source/farbot/NonRealtimeMutatable.tcc"/>
   </MAINGROUP>

@@ -51,27 +51,30 @@ void SspoLookAndFeel::drawRotarySlider(Graphics& g, int x, int y, int width, int
 
 
 	//draw knob
-	g.setColour(Colours::antiquewhite);
+	g.setColour(slider.isEnabled() ? Colours::antiquewhite : Colours::grey);
 	g.fillEllipse(rx, ry, rw, rw);
 
 	//draw outline
 	g.setColour(Colours::black);
 	g.drawEllipse(rx, ry, rw, rw, rw * 0.1f);
 
-	//create the pointer
-	Path linePath;
-	Path triPath;
-	auto pointerLength = radius * 0.3f;
-	auto pointerThickness = 2.0f;
-	linePath.addRectangle(-pointerThickness * 0.5f, -radius, pointerThickness, pointerLength);
-	triPath.addTriangle(0, -radius, pointerLength, -radius + pointerLength, -pointerLength, -radius + pointerLength);
-	//rotate pointer
-	linePath.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
-	triPath.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
-	g.setColour(Colours::black);
-	g.fillPath(triPath);
-	g.setColour(Colours::antiquewhite);
-	g.fillPath(linePath);
+	if (slider.isEnabled())
+	{
+		//create the pointer
+		Path linePath;
+		Path triPath;
+		auto pointerLength = radius * 0.3f;
+		auto pointerThickness = 2.0f;
+		linePath.addRectangle(-pointerThickness * 0.5f, -radius, pointerThickness, pointerLength);
+		triPath.addTriangle(0, -radius, pointerLength, -radius + pointerLength, -pointerLength, -radius + pointerLength);
+		//rotate pointer
+		linePath.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
+		triPath.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
+		g.setColour(Colours::black);
+		g.fillPath(triPath);
+		g.setColour(Colours::antiquewhite);
+		g.fillPath(linePath);
+	}
 }
 
 Label* SspoLookAndFeel::createSliderTextBox(Slider& slider)

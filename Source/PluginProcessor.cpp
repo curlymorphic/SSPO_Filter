@@ -243,6 +243,17 @@ void Sspo_filterAudioProcessor::setStateInformation (const void* data, int sizeI
 			parameters.replaceState(ValueTree::fromXml(*xmlState));
 }
 
+bool Sspo_filterAudioProcessor::getFilterUseQ(int index)
+{
+	return m_filters.at(0)->getUseQ(index);
+}
+
+bool Sspo_filterAudioProcessor::getFilterUseGain(int index)
+{
+	return m_filters.at(0)->getUseGain(index);
+}
+
+
 void Sspo_filterAudioProcessor::parameterChanged(const String& parameterID, float newValue)
 {
 

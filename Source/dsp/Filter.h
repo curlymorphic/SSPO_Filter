@@ -189,6 +189,9 @@ public:
 	///  m_freq, m_Q and m_gain
 	virtual void calcCoefficents() = 0;
 
+	virtual bool getUseQ() = 0;
+	virtual bool getUseGain() = 0;
+
 protected:
 
 	float m_freq{ 440.0f };
@@ -237,6 +240,16 @@ public:
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return false;
+	}
 };
 
 ///
@@ -278,6 +291,16 @@ public:
 		float d0 = 0.0f;
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+	}
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return false;
 	}
 };
 
@@ -328,6 +351,16 @@ public:
 		float d0 = 0.0f;
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+	}
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return true;
 	}
 };
 
@@ -381,6 +414,16 @@ public:
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return true;
+	}
 };
 
 ///
@@ -426,6 +469,16 @@ public:
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return true;
+	}
 };
 
 ///
@@ -470,6 +523,16 @@ public:
 		float d0 = 0.0f;
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+	}
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return true;
 	}
 };
 
@@ -522,6 +585,16 @@ public:
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
+
+	bool getUseGain() override
+	{
+		return true;
+	}
+
+	bool getUseQ() override
+	{
+		return true;
+	}
 };
 
 
@@ -570,6 +643,16 @@ public:
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
 	}
+
+	bool getUseGain() override
+	{
+		return true;
+	}
+
+	bool getUseQ() override
+	{
+		return false;
+	}
 };
 
 ///
@@ -616,6 +699,16 @@ public:
 		float d0 = 1.0f;
 
 		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+	}
+
+	bool getUseGain() override
+	{
+		return true;
+	}
+
+	bool getUseQ() override
+	{
+		return false;
 	}
 };
 
@@ -674,6 +767,16 @@ public:
 		push_back(std::unique_ptr<Filter> {new Lp12()});
 		push_back(std::unique_ptr<Filter> {new Lp12()});
 	};
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return true;
+	}
 };
 
 class Hp24 : public FilterChain
@@ -683,6 +786,16 @@ public:
 	{
 		push_back(std::unique_ptr<Filter> {new Hp12()});
 		push_back(std::unique_ptr<Filter> {new Hp12()});
+	}
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return true;
 	}
 };
 
@@ -756,9 +869,32 @@ public:
 		m_filters[m_currentFilterIndex.load()]->calcCoefficents();
 	}
 
+	bool getUseGain(int index) 
+	{
+		return m_filters.at(index)->getUseGain();
+	}
+
+	bool getUseQ(int index) 
+	{
+		return m_filters.at(index)->getUseQ();
+	}
+
+	bool getUseGain() override
+	{
+		return false;
+	}
+
+	bool getUseQ() override
+	{
+		return false;
+	}
+
 private:
 	std::vector<std::unique_ptr<Filter>> m_filters;
 	//Filter* m_currentFilter;
 	std::atomic_int m_currentFilterIndex{ 0 };
 	static_assert (std::atomic_int::is_always_lock_free);
+
+	// Inherited via Filter
+
 };
