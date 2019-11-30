@@ -28,18 +28,18 @@ SspoLookAndFeel::SspoLookAndFeel() : LookAndFeel_V4()
 
 void SspoLookAndFeel::drawRotarySlider(Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, Slider& slider)
 {
-	auto radius = jmin(width / 2, height / 2) - 4.0f;
-	auto centreX = x + width * 0.5f;
-	auto centreY = y + height * 0.5f;
-	auto rx = centreX - radius * 0.7f;
-	auto ry = centreY - radius * 0.7f;
-	auto rw = radius * 1.4f;
-	auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
+	const auto radius = jmin(width / 2, height / 2) - 4.0f;
+	const auto centreX = x + width * 0.5f;
+	const auto centreY = y + height * 0.5f;
+	const auto rx = centreX - radius * 0.7f;
+	const auto ry = centreY - radius * 0.7f;
+	const auto rw = radius * 1.4f;
+	const auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
 	//draw markings
-	auto markLength = radius * 0.1f;
-	auto markThickness = 1.0f;
-	auto divisionRotation = (rotaryEndAngle - rotaryStartAngle) * 0.1f;
+	const auto markLength = radius * 0.1f;
+	const auto markThickness = 1.0f;
+	const auto divisionRotation = (rotaryEndAngle - rotaryStartAngle) * 0.1f;
 	g.setColour(Colours::whitesmoke);
 	for (auto i = 0; i <= 10; ++i)
 	{
@@ -56,7 +56,7 @@ void SspoLookAndFeel::drawRotarySlider(Graphics& g, int x, int y, int width, int
 
 	//draw outline
 	g.setColour(Colours::black);
-	g.drawEllipse(rx, ry, rw, rw, rw*0.1f);
+	g.drawEllipse(rx, ry, rw, rw, rw * 0.1f);
 
 	//create the pointer
 	Path linePath;
@@ -78,7 +78,10 @@ Label* SspoLookAndFeel::createSliderTextBox(Slider& slider)
 {
 	auto l = LookAndFeel_V4::createSliderTextBox(slider);
 
-	l->setColour(Label::outlineWhenEditingColourId, Colours::transparentBlack);
-	l->setColour(Label::outlineColourId, Colours::transparentBlack);
+	if (l)
+	{
+		l->setColour(Label::outlineWhenEditingColourId, Colours::transparentBlack);
+		l->setColour(Label::outlineColourId, Colours::transparentBlack);
+	}
 	return l;
 }

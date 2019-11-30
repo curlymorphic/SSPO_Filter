@@ -36,25 +36,25 @@ Sspo_filterAudioProcessorEditor::Sspo_filterAudioProcessorEditor (Sspo_filterAud
 	addAndMakeVisible(cutoffSlider);
 	cutoffSlider.setSliderStyle(Slider::SliderStyle::RotaryHorizontalVerticalDrag);
 	cutoffSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::TextBoxBelow,false, 100,30);
-	cutoffAttachement.reset(new SliderAttachment(valueTreeState, "cutoff", cutoffSlider));
+	cutoffAttachement = make_unique<SliderAttachment>(valueTreeState, "cutoff", cutoffSlider);
 	resLabel.setText("Q", dontSendNotification);
 	addAndMakeVisible(resLabel);
 	addAndMakeVisible(resSlider);
 	resSlider.setSliderStyle(Slider::SliderStyle::RotaryHorizontalVerticalDrag);
 	resSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::TextBoxBelow,false,100,30);
-	resAttachment.reset(new SliderAttachment(valueTreeState, "res", resSlider));
+	resAttachment = make_unique<SliderAttachment>(valueTreeState, "res", resSlider);
 
 	addAndMakeVisible(gainSlider);
 	gainSlider.setSliderStyle(Slider::SliderStyle::RotaryHorizontalVerticalDrag);
 	gainSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::TextBoxBelow, false, 100, 30);
-	gainAttachment.reset(new SliderAttachment(valueTreeState, "gain", gainSlider));
+	gainAttachment = make_unique<SliderAttachment>(valueTreeState, "gain", gainSlider);
 
 	addAndMakeVisible(typeCombo);
 	StringArray filterTypes;
 	for (auto s : MultiFilter::typeStings()) filterTypes.add(s);
 	typeCombo.addItemList(filterTypes, 1);
 	typeCombo.setSelectedId(1);
-	typeAttachment.reset(new AudioProcessorValueTreeState::ComboBoxAttachment(valueTreeState, "type", typeCombo));
+	typeAttachment = make_unique<AudioProcessorValueTreeState::ComboBoxAttachment>(valueTreeState, "type", typeCombo);
 }
 
 Sspo_filterAudioProcessorEditor::~Sspo_filterAudioProcessorEditor()
@@ -70,12 +70,12 @@ void Sspo_filterAudioProcessorEditor::paint (Graphics& g)
 
     g.setColour (Colours::white);
     g.setFont (15.0f);
-	cutoffSlider.setBounds(0, 0, 100, 130);
-	resSlider.setBounds(100, 0, 100, 130);
-	cutoffLabel.setBounds(0, 130, 100, 30);
-	resLabel.setBounds(100, 130, 100, 30);
+	cutoffSlider.setBounds(15, 15, 85, 115);
+	resSlider.setBounds(100, 15, 85, 115);
+	cutoffLabel.setBounds(15, 0, 100, 15);
+	resLabel.setBounds(100, 0, 100, 15);
 	typeCombo.setBounds(200, 130, 100, 30);
-	gainSlider.setBounds(200, 0, 100, 130);
+	gainSlider.setBounds(185, 15, 85, 115);
 }
 
 void Sspo_filterAudioProcessorEditor::resized()

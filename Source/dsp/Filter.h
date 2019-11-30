@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "AudioProcess.h"
+#include "..\farbot\NonRealtimeMutatable.hpp"
 
 
 
@@ -86,13 +87,9 @@ public:
 
 	inline void setCoeffs(float a0, float a1, float a2, float b1, float b2, float c0, float d0)
 	{
-		m_a0 = a0;
-		m_a1 = a1;
-		m_a2 = a2;
-		m_b1 = b1;
-		m_b2 = b2;
-		m_c0 = c0;
-		m_d0 = d0;
+		BiquadCoeffecients newCoeffs{  a0,  a1,  a2,  b1,  b2,  c0,  d0 };
+		farbot::NonRealtimeMutatable<BiquadCoeffecients>::ScopedAccess<false> coeffs(m_biquadCoeffs);
+		*coeffs = newCoeffs;
 	}
 
 	inline void clear()
@@ -103,18 +100,27 @@ public:
 
 	inline float tick(float in)
 	{
-		float out = m_z1 + m_a0 * in;
+		farbot::NonRealtimeMutatable<BiquadCoeffecients>::ScopedAccess<true> coeffs(m_biquadCoeffs);
+
+		float out = m_z1 + coeffs->m_a0 * in;
 		//check denormal
 		if (!isnormal(out)) out = 0.0f;
-		m_z1 = m_a1 * in + m_z2 - m_b1 * out;
-		m_z2 = m_a2 * in - m_b2 * out;
-		return out * m_c0 + in * m_d0;
+		m_z1 = coeffs->m_a1 * in + m_z2 - coeffs->m_b1 * out;
+		m_z2 = coeffs->m_a2 * in - coeffs->m_b2 * out;
+		return out * coeffs->m_c0 + in * coeffs->m_d0;
 	}
 
 protected:
-	float m_b1, m_b2, m_a0, m_a1, m_a2;
-	float m_c0, m_d0;
+
 	float m_z1, m_z2;
+
+	struct BiquadCoeffecients
+	{
+		float m_a0, m_a1, m_a2, m_b1, m_b2;
+		float m_c0, m_d0;
+	};
+
+	farbot::NonRealtimeMutatable<BiquadCoeffecients> m_biquadCoeffs;
 };
 
 
@@ -217,7 +223,7 @@ public:
 
 	void calcCoefficents() override
 	{
-		float theta = F_2PI * m_freq / m_sampleRate;
+		float theta = k_2pi * m_freq / m_sampleRate;
 		float c = cosf(theta);
 		float s = sinf(theta);
 		float gamma = c / (1 + s);
@@ -259,7 +265,7 @@ public:
 
 	void calcCoefficents() override
 	{
-		float theta = F_2PI * m_freq / m_sampleRate;
+		float theta = k_2pi * m_freq / m_sampleRate;
 		float c = cosf(theta);
 		float s = sinf(theta);
 		float gamma = c / (1 + s);
@@ -306,7 +312,7 @@ public:
 
 	void calcCoefficents() override
 	{
-		float theta = F_2PI * m_freq / m_sampleRate;
+		float theta = k_2pi * m_freq / m_sampleRate;
 		float c = cosf(theta);
 		float s = sinf(theta);
 		float d = 1.0f / m_Q;
@@ -358,7 +364,7 @@ public:
 
 	void calcCoefficents() override
 	{
-		float theta = F_2PI * m_freq / m_sampleRate;
+		float theta = k_2pi * m_freq / m_sampleRate;
 		float c = cosf(theta);
 		float s = sinf(theta);
 		float d = 1.0f / m_Q;
@@ -407,7 +413,7 @@ public:
 
 	void calcCoefficents() override
 	{
-		float K = tanf((F_PI * m_freq) / m_sampleRate);
+		float K = tanf((k_pi * m_freq) / m_sampleRate);
 		float delta = K * K * m_Q + K + m_Q;
 
 		float a0 = K / delta;
@@ -452,7 +458,7 @@ public:
 
 	void calcCoefficents() override
 	{
-		float K = tanf((F_PI * m_freq) / m_sampleRate);
+		float K = tanf((k_pi * m_freq) / m_sampleRate);
 		float delta = K * K * m_Q + K + m_Q;
 
 		float a0 = (m_Q * (K * K + 1)) / delta;
@@ -500,7 +506,7 @@ public:
 	void calcCoefficents() override
 	{
 		float Q = fmax(1.0f, m_Q);
-		float theta = F_2PI * m_freq / m_sampleRate;
+		float theta = k_2pi * m_freq / m_sampleRate;
 		float mu = powf(10, m_gain / 20.0f);
 		float zeta = 4.0f / (1.0f + mu);
 		float beta = 0.5f * ((1 - zeta * tanf(theta / (2.0f * Q))) / (1 + zeta * tanf(theta / (2 * Q))));
@@ -548,7 +554,7 @@ public:
 	}
 	void calcCoefficents() override
 	{
-		float theta = F_2PI * m_freq / m_sampleRate;
+		float theta = k_2pi * m_freq / m_sampleRate;
 		float mu = powf(10, m_gain / 20.0f);
 		float beta = 4.0f / (1.0f + mu);
 		float delta = beta * tanf(theta * 0.5f);
@@ -595,7 +601,7 @@ public:
 
 	void calcCoefficents() override
 	{
-		float theta = F_2PI * m_freq / m_sampleRate;
+		float theta = k_2pi * m_freq / m_sampleRate;
 		float mu = powf(10, m_gain / 20.0f);
 		float beta = (1.0f + mu) / 4.0f;
 		float delta = beta * tanf(theta * 0.5f);

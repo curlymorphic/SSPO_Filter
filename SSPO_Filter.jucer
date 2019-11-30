@@ -30,6 +30,10 @@
           file="Source/curlymorphic_sspo.cpp"/>
     <FILE id="djoAuc" name="curlymorphic_sspo.h" compile="0" resource="0"
           file="Source/curlymorphic_sspo.h"/>
+    <FILE id="L30PKk" name="NonRealtimeMutatable.hpp" compile="0" resource="0"
+          file="Source/farbot/NonRealtimeMutatable.hpp"/>
+    <FILE id="UV5tCJ" name="NonRealtimeMutatable.tcc" compile="0" resource="1"
+          file="Source/farbot/NonRealtimeMutatable.tcc"/>
   </MAINGROUP>
   <EXPORTFORMATS>
     <VS2019 targetFolder="Builds/VisualStudio2019">

@@ -25,22 +25,23 @@
 
 
 
-const long double LD_PI = 3.14159265358979323846264338327950288419716939937510;
-const float F_PI = (float)LD_PI;
-const float F_2PI = F_PI + F_PI;
-const float base_a4 = 440.0f;
+constexpr long double LD_PI = 3.14159265358979323846264338327950288419716939937510;
+constexpr auto k_pi = static_cast<float>(LD_PI);
+constexpr auto k_2pi = k_pi + k_pi;
+constexpr auto base_a4 = 440.0f;
 
 
-inline float midiNoteFreq(int note)
+inline float midiNoteFreq(int note) noexcept
 {
-	return 440.0 * powf(2.0, (note - 69.0) / 12.0);
+	return 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
 }
 
-inline float fraction(float val) {
-	return val - (int)val;
+inline float fraction(float val) noexcept
+{
+	return val - static_cast<int>(val);
 }
 
-inline float bound(float minval, float val, float maxval)
+inline float bound(float minval, float val, float maxval) noexcept
 {
 	return fmax(minval, fmin(val, maxval));
 }

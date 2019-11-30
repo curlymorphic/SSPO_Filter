@@ -28,20 +28,23 @@ AudioProcess classes are designed to process a single channel of audio,
 class AudioProcess
 {
 public:
-	AudioProcess()
+	AudioProcess() 
 	{
 
 	}
 
-	AudioProcess(int sr)
+	AudioProcess(int sr) 
 	{
 		m_sampleRate = sr;
 	}
 
-	~AudioProcess()
-	{}
+	virtual ~AudioProcess()
+	{
 
-	virtual void setSampleRate(int sr)
+	}
+
+
+	virtual void setSampleRate(int sr) 
 	{
 		if ( sr > 0 ) m_sampleRate = sr;
 	}
@@ -50,11 +53,14 @@ public:
 
 	virtual void processBlock(float* block, int blockSize)
 	{
-		for (auto i = 0; i < blockSize; ++i)
+		if (block)
 		{
-			auto data = block[i];
-			data = processSample(data);
-			block[i] = data;
+			for (auto i = 0; i < blockSize; ++i)
+			{
+				auto data = block[i];
+				data = processSample(data);
+				block[i] = data;
+			}
 		}
 	}
 

@@ -212,13 +212,7 @@ void Sspo_filterAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBu
 	for (auto j = 0; j < buffer.getNumChannels(); j++)
 	{
 		auto channelData = buffer.getWritePointer(j);
-		for (auto i = 0; i < buffer.getNumSamples(); ++i)
-		{
-			auto x = channelData[i];
-			auto& f = m_filters.at(j);
-			x = f->processSample(x);
-			channelData[i] = x;
-		}
+		m_filters.at(j)->processBlock(channelData, buffer.getNumSamples());
 	}
 }
 
