@@ -37,28 +37,28 @@ class FirstOrderFeedBackFilter
 {
 public:
 
-	FirstOrderFeedBackFilter()
+	FirstOrderFeedBackFilter ()
 	{
-		clear();
+		clear ();
 	}
 
-	~FirstOrderFeedBackFilter()
+	~FirstOrderFeedBackFilter ()
 	{
 
 	}
 
-	inline void clear()
+	inline void clear () noexcept
 	{
 		m_z1 = 0;
 	}
-	inline float tick(float in)
+	inline float tick (float in) noexcept
 	{
-		float data = m_a0 * in - m_b1 * m_z1;
+		const float data = m_a0 * in - m_b1 * m_z1;
 		m_z1 = data;
 		return data;
 	}
 
-	void setCoeffs(float a0, float b1)
+	void setCoeffs (float a0, float b1) noexcept
 	{
 		m_a0 = a0;
 		m_b1 = b1;
@@ -79,32 +79,32 @@ protected:
 class BiQuad
 {
 public:
-	BiQuad()
+	BiQuad ()
 	{
-		clear();
+		clear ();
 	}
-	virtual ~BiQuad() {}
+	virtual ~BiQuad () {}
 
-	inline void setCoeffs(float a0, float a1, float a2, float b1, float b2, float c0, float d0)
+	inline void setCoeffs (float a0, float a1, float a2, float b1, float b2, float c0, float d0)
 	{
-		BiquadCoeffecients newCoeffs{  a0,  a1,  a2,  b1,  b2,  c0,  d0 };
-		farbot::NonRealtimeMutatable<BiquadCoeffecients>::ScopedAccess<false> coeffs(m_biquadCoeffs);
+		BiquadCoeffecients newCoeffs{ a0,  a1,  a2,  b1,  b2,  c0,  d0 };
+		farbot::NonRealtimeMutatable<BiquadCoeffecients>::ScopedAccess<false> coeffs (m_biquadCoeffs);
 		*coeffs = newCoeffs;
 	}
 
-	inline void clear()
+	inline void clear () noexcept
 	{
 		m_z1 = 0.0f;
 		m_z2 = 0.0f;
 	}
 
-	inline float tick(float in)
+	inline float tick (float in)
 	{
-		farbot::NonRealtimeMutatable<BiquadCoeffecients>::ScopedAccess<true> coeffs(m_biquadCoeffs);
+		farbot::NonRealtimeMutatable<BiquadCoeffecients>::ScopedAccess<true> coeffs (m_biquadCoeffs);
 
 		float out = m_z1 + coeffs->m_a0 * in;
 		//check denormal
-		if (!isnormal(out)) out = 0.0f;
+		if (!isnormal (out)) out = 0.0f;
 		m_z1 = coeffs->m_a1 * in + m_z2 - coeffs->m_b1 * out;
 		m_z2 = coeffs->m_a2 * in - coeffs->m_b2 * out;
 		return out * coeffs->m_c0 + in * coeffs->m_d0;
@@ -136,61 +136,61 @@ class Filter : public AudioProcess
 {
 public:
 
-	Filter() : AudioProcess()
+	Filter () : AudioProcess ()
 	{
 
 
 	}
 
-	Filter(int samplerate) :
-		AudioProcess() {
+	Filter (int samplerate) :
+		AudioProcess () {
 		m_sampleRate = samplerate;
 	}
 
-	virtual inline void setFrequency(float freq)
+	virtual inline void setFrequency (float freq)
 	{
-		m_freq = bound(20.0f, freq, 20000.0f);
-		calcCoefficents();
+		m_freq = bound (20.0f, freq, 20000.0f);
+		calcCoefficents ();
 	}
 
-	virtual void clear() = 0;
+	virtual void clear () = 0;
 
-	virtual void setQ(float Q)
+	virtual void setQ (float Q)
 	{
 
 		m_Q = Q;
-		calcCoefficents();
+		calcCoefficents ();
 	}
 
-	virtual void setGain(float proposedGain)
+	virtual void setGain (float proposedGain)
 	{
 		m_gain = proposedGain;
-		calcCoefficents();
+		calcCoefficents ();
 	}
 
 
-	virtual inline void setParameters(float freq, float Q, float gain = 1.0)
+	virtual inline void setParameters (float freq, float Q, float gain = 1.0)
 	{
-		m_freq = bound(20.0f, freq, 20000.0f);
-		m_Q = bound(0.1f, Q, 20.0f);
+		m_freq = bound (20.0f, freq, 20000.0f);
+		m_Q = bound (0.1f, Q, 20.0f);
 		m_gain = gain;
-		calcCoefficents();
+		calcCoefficents ();
 	}
 
-	void setSampleRate(int sr) override
+	void setSampleRate (int sr) override
 	{
 		m_sampleRate = sr;
-		calcCoefficents();
+		calcCoefficents ();
 	}
 
 	///
 	/// \brief calcCoefficents
 	///  Override this in child classes to provide the coefficents, based on
 	///  m_freq, m_Q and m_gain
-	virtual void calcCoefficents() = 0;
+	virtual void calcCoefficents () = 0;
 
-	virtual bool getUseQ() = 0;
-	virtual bool getUseGain() = 0;
+	virtual bool getUseQ () = 0;
+	virtual bool getUseGain () = 0;
 
 protected:
 
@@ -207,46 +207,46 @@ protected:
 class Lp6 : public Filter, public BiQuad
 {
 public:
-	Lp6() : Filter()
+	Lp6 () : Filter ()
 	{}
 
-	Lp6(int sampleRate)
-		: Filter(sampleRate)
+	Lp6 (int sampleRate)
+		: Filter (sampleRate)
 	{}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float theta = k_2pi * m_freq / m_sampleRate;
-		float c = cosf(theta);
-		float s = sinf(theta);
-		float gamma = c / (1 + s);
-		float a0 = (1 - gamma) * 0.5f;
-		float a1 = (1 - gamma) * 0.5f;
-		float a2 = 0.0f;
-		float b1 = -gamma;
-		float b2 = 0.0f;
-		float c0 = 1.0f;
-		float d0 = 0.0f;
+		const float theta = k_2pi * m_freq / m_sampleRate;
+		const float c = cosf (theta);
+		const float s = sinf (theta);
+		const float gamma = c / (1 + s);
+		const float a0 = (1 - gamma) * 0.5f;
+		const float a1 = (1 - gamma) * 0.5f;
+		const float a2 = 0.0f;
+		const float b1 = -gamma;
+		const float b2 = 0.0f;
+		const float c0 = 1.0f;
+		const float d0 = 0.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return false;
 	}
@@ -259,46 +259,46 @@ public:
 class Hp6 : public Filter, public BiQuad
 {
 public:
-	Hp6() : Filter()
+	Hp6 () : Filter ()
 	{}
 
-	Hp6(int sampleRate)
-		: Filter(sampleRate)
+	Hp6 (int sampleRate)
+		: Filter (sampleRate)
 	{}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float theta = k_2pi * m_freq / m_sampleRate;
-		float c = cosf(theta);
-		float s = sinf(theta);
-		float gamma = c / (1 + s);
-		float a0 = (1 + gamma) * 0.5f;
-		float a1 = (1 + gamma) * -0.5f;
-		float a2 = 0.0f;
-		float b1 = -gamma;
-		float b2 = 0.0f;
-		float c0 = 1.0f;
-		float d0 = 0.0f;
+		const float theta = k_2pi * m_freq / m_sampleRate;
+		const float c = cosf (theta);
+		const float s = sinf (theta);
+		const float gamma = c / (1 + s);
+		const float a0 = (1 + gamma) * 0.5f;
+		const float a1 = (1 + gamma) * -0.5f;
+		const float a2 = 0.0f;
+		const float b1 = -gamma;
+		const float b2 = 0.0f;
+		const float c0 = 1.0f;
+		const float d0 = 0.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return false;
 	}
@@ -314,51 +314,51 @@ class Hp12 : public Filter, public BiQuad
 {
 public:
 
-	Hp12() : Filter()
+	Hp12 () : Filter ()
 	{}
 
 
-	Hp12(int samplerate) :
-		Filter(samplerate)
+	Hp12 (int samplerate) :
+		Filter (samplerate)
 	{
 	}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float theta = k_2pi * m_freq / m_sampleRate;
-		float c = cosf(theta);
-		float s = sinf(theta);
-		float d = 1.0f / m_Q;
-		float beta = 0.5f * ((1 - 0.5f * d * s) / (1 + 0.5f * d * s));
-		float gamma = (0.5f + beta) * c;
+		const float theta = k_2pi * m_freq / m_sampleRate;
+		const float c = cosf (theta);
+		const float s = sinf (theta);
+		const float d = 1.0f / m_Q;
+		const float beta = 0.5f * ((1 - 0.5f * d * s) / (1 + 0.5f * d * s));
+		const float gamma = (0.5f + beta) * c;
 
-		float a0 = (0.5f + beta + gamma) * 0.5f;
-		float a1 = -(0.5f + beta + gamma);
-		float a2 = (0.5f + beta + gamma) * 0.5f;
-		float b1 = -2.0f * gamma;
-		float b2 = 2.0f * beta;
-		float c0 = 1.0f;
-		float d0 = 0.0f;
+		const float a0 = (0.5f + beta + gamma) * 0.5f;
+		const float a1 = -(0.5f + beta + gamma);
+		const float a2 = (0.5f + beta + gamma) * 0.5f;
+		const float b1 = -2.0f * gamma;
+		const float b2 = 2.0f * beta;
+		const float c0 = 1.0f;
+		const float d0 = 0.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return true;
 	}
@@ -375,52 +375,52 @@ public:
 class Lp12 : public Filter, public BiQuad
 {
 public:
-	Lp12() :
-		Filter()
+	Lp12 () :
+		Filter ()
 	{
 	}
 
-	Lp12(int samplerate) :
-		Filter(samplerate)
+	Lp12 (int samplerate) :
+		Filter (samplerate)
 	{
 	}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float theta = k_2pi * m_freq / m_sampleRate;
-		float c = cosf(theta);
-		float s = sinf(theta);
-		float d = 1.0f / m_Q;
-		float beta = 0.5f * ((1 - 0.5f * d * s) / (1 + 0.5f * d * s));
-		float gamma = (0.5f + beta) * c;
+		const float theta = k_2pi * m_freq / m_sampleRate;
+		const float c = cosf (theta);
+		const float s = sinf (theta);
+		const float d = 1.0f / m_Q;
+		const float beta = 0.5f * ((1 - 0.5f * d * s) / (1 + 0.5f * d * s));
+		const float gamma = (0.5f + beta) * c;
 
-		float a0 = (0.5f + beta - gamma) * 0.5f;
-		float a1 = 0.5f + beta - gamma;
-		float a2 = (0.5f + beta - gamma) * 0.5f;
-		float b1 = -2.0f * gamma;
-		float b2 = 2.0f * beta;
-		float c0 = 1.0f;
-		float d0 = 0.0f;
+		const float a0 = (0.5f + beta - gamma) * 0.5f;
+		const float a1 = 0.5f + beta - gamma;
+		const float a2 = (0.5f + beta - gamma) * 0.5f;
+		const float b1 = -2.0f * gamma;
+		const float b2 = 2.0f * beta;
+		const float c0 = 1.0f;
+		const float d0 = 0.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return true;
 	}
@@ -434,48 +434,48 @@ public:
 class Bp12 : public Filter, public BiQuad
 {
 public:
-	Bp12() :
-		Filter()
+	Bp12 () :
+		Filter ()
 	{
 	}
 
-	Bp12(int samplerate) :
-		Filter(samplerate)
+	Bp12 (int samplerate) :
+		Filter (samplerate)
 	{
 	}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float K = tanf((k_pi * m_freq) / m_sampleRate);
-		float delta = K * K * m_Q + K + m_Q;
+		const float K = tanf ((k_pi * m_freq) / m_sampleRate);
+		const float delta = K * K * m_Q + K + m_Q;
 
-		float a0 = K / delta;
-		float a1 = 0.0;
-		float a2 = -K / delta;
-		float b1 = (2.0f * m_Q * (K * K - 1)) / delta;
-		float b2 = (K * K * m_Q - K + m_Q) / delta;
-		float c0 = 1.0f;
-		float d0 = 0.0f;
+		const float a0 = K / delta;
+		const float a1 = 0.0;
+		const float a2 = -K / delta;
+		const float b1 = (2.0f * m_Q * (K * K - 1)) / delta;
+		const float b2 = (K * K * m_Q - K + m_Q) / delta;
+		const float c0 = 1.0f;
+		const float d0 = 0.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return true;
 	}
@@ -489,48 +489,48 @@ public:
 class Bs12 : public Filter, public BiQuad
 {
 public:
-	Bs12() :
-		Filter()
+	Bs12 () :
+		Filter ()
 	{
 	}
 
-	Bs12(int samplerate) :
-		Filter(samplerate)
+	Bs12 (int samplerate) :
+		Filter (samplerate)
 	{
 	}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float K = tanf((k_pi * m_freq) / m_sampleRate);
-		float delta = K * K * m_Q + K + m_Q;
+		const float K = tanf ((k_pi * m_freq) / m_sampleRate);
+		const float delta = K * K * m_Q + K + m_Q;
 
-		float a0 = (m_Q * (K * K + 1)) / delta;
-		float a1 = (2.0f * m_Q * (K * K - 1)) / delta;
-		float a2 = (m_Q * (K * K + 1)) / delta;
-		float b1 = (2.0f * m_Q * (K * K - 1)) / delta;
-		float b2 = (K * K * m_Q - K + m_Q) / delta;
-		float c0 = 1.0f;
-		float d0 = 0.0f;
+		const float a0 = (m_Q * (K * K + 1)) / delta;
+		const float a1 = (2.0f * m_Q * (K * K - 1)) / delta;
+		const float a2 = (m_Q * (K * K + 1)) / delta;
+		const float b1 = (2.0f * m_Q * (K * K - 1)) / delta;
+		const float b2 = (K * K * m_Q - K + m_Q) / delta;
+		const float c0 = 1.0f;
+		const float d0 = 0.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return true;
 	}
@@ -545,53 +545,53 @@ public:
 class PeakFilter : public Filter, public BiQuad
 {
 public:
-	PeakFilter() :
-		Filter()
+	PeakFilter () :
+		Filter ()
 	{
 	}
 
-	PeakFilter(int samplerate) :
-		Filter(samplerate)
+	PeakFilter (int samplerate) :
+		Filter (samplerate)
 	{
 	}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
 
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float Q = fmax(1.0f, m_Q);
-		float theta = k_2pi * m_freq / m_sampleRate;
-		float mu = powf(10, m_gain / 20.0f);
-		float zeta = 4.0f / (1.0f + mu);
-		float beta = 0.5f * ((1 - zeta * tanf(theta / (2.0f * Q))) / (1 + zeta * tanf(theta / (2 * Q))));
-		float gamma = (0.5f + beta) * cosf(theta);
+		const float Q = fmax (1.0f, m_Q);
+		const float theta = k_2pi * m_freq / m_sampleRate;
+		const float mu = powf (10, m_gain / 20.0f);
+		const float zeta = 4.0f / (1.0f + mu);
+		const float beta = 0.5f * ((1 - zeta * tanf (theta / (2.0f * Q))) / (1 + zeta * tanf (theta / (2 * Q))));
+		const float gamma = (0.5f + beta) * cosf (theta);
 
-		float a0 = 0.5f - beta;
-		float a1 = 0.0;
-		float a2 = -(0.5f - beta);
-		float b1 = -2.0f * gamma;
-		float b2 = 2.0f * beta;
-		float c0 = mu - 1.0f;
-		float d0 = 1.0f;
+		const float a0 = 0.5f - beta;
+		const float a1 = 0.0;
+		const float a2 = -(0.5f - beta);
+		const float b1 = -2.0f * gamma;
+		const float b2 = 2.0f * beta;
+		const float c0 = mu - 1.0f;
+		const float d0 = 1.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return true;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return true;
 	}
@@ -606,50 +606,50 @@ public:
 class LowShelf : public Filter, public BiQuad
 {
 public:
-	LowShelf() :
-		Filter()
+	LowShelf () :
+		Filter ()
 	{
 	}
 
-	LowShelf(int samplerate) :
-		Filter(samplerate)
+	LowShelf (int samplerate) :
+		Filter (samplerate)
 	{
 	}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float theta = k_2pi * m_freq / m_sampleRate;
-		float mu = powf(10, m_gain / 20.0f);
-		float beta = 4.0f / (1.0f + mu);
-		float delta = beta * tanf(theta * 0.5f);
-		float gamma = (1.0f - delta) / (1.0f + delta);
+		const float theta = k_2pi * m_freq / m_sampleRate;
+		const float mu = powf (10, m_gain / 20.0f);
+		const float beta = 4.0f / (1.0f + mu);
+		const float delta = beta * tanf (theta * 0.5f);
+		const float gamma = (1.0f - delta) / (1.0f + delta);
 
-		float a0 = (1.0f - gamma) * 0.5f;
-		float a1 = (1.0f - gamma) * 0.5f;
-		float a2 = 0.0f;
-		float b1 = -gamma;
-		float b2 = 0.0f;
-		float c0 = mu - 1.0f;
-		float d0 = 1.0f;
+		const float a0 = (1.0f - gamma) * 0.5f;
+		const float a1 = (1.0f - gamma) * 0.5f;
+		const float a2 = 0.0f;
+		const float b1 = -gamma;
+		const float b2 = 0.0f;
+		const float c0 = mu - 1.0f;
+		const float d0 = 1.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return true;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return false;
 	}
@@ -662,51 +662,51 @@ public:
 class HighShelf : public Filter, public BiQuad
 {
 public:
-	HighShelf() :
-		Filter()
+	HighShelf () :
+		Filter ()
 	{
 	}
 
-	HighShelf(int samplerate) :
-		Filter(samplerate)
+	HighShelf (int samplerate) :
+		Filter (samplerate)
 	{
 	}
 
-	float processSample(float in) override
+	float processSample (float in) override
 	{
-		return tick(in);
+		return tick (in);
 	}
 
-	void clear() override
+	void clear () override
 	{
-		BiQuad::clear();
+		BiQuad::clear ();
 	}
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		float theta = k_2pi * m_freq / m_sampleRate;
-		float mu = powf(10, m_gain / 20.0f);
-		float beta = (1.0f + mu) / 4.0f;
-		float delta = beta * tanf(theta * 0.5f);
-		float gamma = (1.0f - delta) / (1.0f + delta);
+		const float theta = k_2pi * m_freq / m_sampleRate;
+		const float mu = powf (10, m_gain / 20.0f);
+		const float beta = (1.0f + mu) / 4.0f;
+		const float delta = beta * tanf (theta * 0.5f);
+		const float gamma = (1.0f - delta) / (1.0f + delta);
 
-		float a0 = (1.0f + gamma) * 0.5f;
-		float a1 = (1.0f + gamma) * -0.5f;
-		float a2 = 0.0f;
-		float b1 = -gamma;
-		float b2 = 0.0f;
-		float c0 = mu - 1.0f;
-		float d0 = 1.0f;
+		const float a0 = (1.0f + gamma) * 0.5f;
+		const float a1 = (1.0f + gamma) * -0.5f;
+		const float a2 = 0.0f;
+		const float b1 = -gamma;
+		const float b2 = 0.0f;
+		const float c0 = mu - 1.0f;
+		const float d0 = 1.0f;
 
-		setCoeffs(a0, a1, a2, b1, b2, c0, d0);
+		setCoeffs (a0, a1, a2, b1, b2, c0, d0);
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return true;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return false;
 	}
@@ -718,41 +718,41 @@ public:
 class FilterChain : public Filter
 {
 public:
-	FilterChain()
-		: Filter() {}
+	FilterChain ()
+		: Filter () {}
 
-	~FilterChain() {  }
+	~FilterChain () {  }
 
-	void push_back(std::unique_ptr<Filter> newFilter) { m_filters.push_back(std::move(newFilter)); }
+	void push_back (std::unique_ptr<Filter> newFilter) { m_filters.push_back (std::move (newFilter)); }
 
-	inline void setFrequency(float freq) override { for (auto& f : m_filters) { f->setFrequency(freq); } }
+	inline void setFrequency (float freq) override { for (auto& f : m_filters) { f->setFrequency (freq); } }
 
-	void setQ(float Q) override { for (auto& f : m_filters) { f->setQ(Q); } }
+	void setQ (float Q) override { for (auto& f : m_filters) { f->setQ (Q); } }
 
-	void setGain(float proposedGain) override { for (auto& f : m_filters) { f->setGain(proposedGain); } }
+	void setGain (float proposedGain) override { for (auto& f : m_filters) { f->setGain (proposedGain); } }
 
-	inline void setParameters(float freq, float Q, float gain = 0.0) override
+	inline void setParameters (float freq, float Q, float gain = 0.0) override
 	{
-		for (auto& f : m_filters) { f->setParameters(freq, Q, gain); }
+		for (auto& f : m_filters) { f->setParameters (freq, Q, gain); }
 	}
 
-	inline float processSample(float in) override
+	inline float processSample (float in) override
 	{
 		float val = in;
-		for (auto& f : m_filters) { val = f->processSample(val); }
+		for (auto& f : m_filters) { val = f->processSample (val); }
 		return val;
 	}
 
-	inline void clear() override { for (auto& f : m_filters) { f->clear(); } }
+	inline void clear () override { for (auto& f : m_filters) { f->clear (); } }
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		for (auto& f : m_filters) { f->calcCoefficents(); }
+		for (auto& f : m_filters) { f->calcCoefficents (); }
 	}
 
-	void setSampleRate(int sr)
+	void setSampleRate (int sr) override
 	{
-		for (auto& f : m_filters) { f->setSampleRate(sr); }
+		for (auto& f : m_filters) { f->setSampleRate (sr); }
 	}
 
 private:
@@ -762,18 +762,18 @@ private:
 class Lp24 : public FilterChain
 {
 public:
-	Lp24() : FilterChain()
+	Lp24 () : FilterChain ()
 	{
-		push_back(std::unique_ptr<Filter> {new Lp12()});
-		push_back(std::unique_ptr<Filter> {new Lp12()});
+		push_back (std::make_unique<Lp12> ());
+		push_back (std::make_unique<Lp12> ());
 	};
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return true;
 	}
@@ -782,18 +782,18 @@ public:
 class Hp24 : public FilterChain
 {
 public:
-	Hp24() : FilterChain()
+	Hp24 () : FilterChain ()
 	{
-		push_back(std::unique_ptr<Filter> {new Hp12()});
-		push_back(std::unique_ptr<Filter> {new Hp12()});
+		push_back (std::make_unique<Hp12> ());
+		push_back (std::make_unique<Hp12> ());
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return true;
 	}
@@ -804,87 +804,87 @@ class MultiFilter : public Filter
 {
 public:
 
-	static std::vector<std::string> typeStings()
+	static std::vector<std::string> typeStings ()
 	{
 		return { "LP6", "LP12", "LP24", "HP6", "HP12", "HP24", "Low Shelf", "High Shelf", "Peak", "BP12", "BS12" };
 	}
 
-	MultiFilter()
+	MultiFilter ()
 	{
-		m_filters.push_back(std::unique_ptr<Filter> {new Lp6()});
-		m_filters.push_back(std::unique_ptr<Filter> {new Lp12()});
-		m_filters.push_back(std::unique_ptr<Filter> {new Lp24()});
-		m_filters.push_back(std::unique_ptr<Filter> {new Hp6()});
-		m_filters.push_back(std::unique_ptr<Filter> {new Hp12()});
-		m_filters.push_back(std::unique_ptr<Filter> {new Hp24()});
-		m_filters.push_back(std::unique_ptr<Filter> {new LowShelf()});
-		m_filters.push_back(std::unique_ptr<Filter> {new HighShelf()});
-		m_filters.push_back(std::unique_ptr<Filter> {new PeakFilter()});
-		m_filters.push_back(std::unique_ptr<Filter> {new Bp12()});
-		m_filters.push_back(std::unique_ptr<Filter> {new Bs12()});
+		m_filters.push_back (std::make_unique < Lp6> ());
+		m_filters.push_back (std::make_unique < Lp12 > ());
+		m_filters.push_back (std::make_unique < Lp24 > ());
+		m_filters.push_back (std::make_unique < Hp6 > ());
+		m_filters.push_back (std::make_unique < Hp12 > ());
+		m_filters.push_back (std::make_unique < Hp24 > ());
+		m_filters.push_back (std::make_unique < LowShelf > ());
+		m_filters.push_back (std::make_unique < HighShelf > ());
+		m_filters.push_back (std::make_unique < PeakFilter > ());
+		m_filters.push_back (std::make_unique < Bp12 > ());
+		m_filters.push_back (std::make_unique < Bs12 > ());
 
-		setType(typeStings()[0]);
+		setType (typeStings ().at (0));
 	}
 
-	~MultiFilter()
+	~MultiFilter ()
 	{
 	}
 
-	bool setType(std::string type)
+	bool setType (std::string type)
 	{
-		for (auto i = 0; i < typeStings().size(); ++i)
+		for (auto i = 0; i < typeStings ().size (); ++i)
 		{
-			if (type.compare(typeStings()[i]) == 0)
+			if (type.compare (typeStings ().at (i)) == 0)
 			{
-				m_filters[i]->setSampleRate(m_sampleRate);
-				m_filters[i]->calcCoefficents();
-				m_filters[i]->clear();
-				m_currentFilterIndex.store(i);
+				m_filters.at (i)->setSampleRate (m_sampleRate);
+				m_filters.at (i)->calcCoefficents ();
+				m_filters.at (i)->clear ();
+				m_currentFilterIndex.store (i);
 				return true;
 			}
 		}
 		return false;
 	}
 
-	inline void setFrequency(float freq) override { m_filters[m_currentFilterIndex.load()]->setFrequency(freq); }
+	inline void setFrequency (float freq) override { m_filters.at (m_currentFilterIndex.load ())->setFrequency (freq); }
 
-	void setQ(float Q) override { m_filters[m_currentFilterIndex.load()]->setQ(Q); }
+	void setQ (float Q) override { m_filters.at (m_currentFilterIndex.load ())->setQ (Q); }
 
-	void setGain(float proposedGain) override { m_filters[m_currentFilterIndex]->setGain(proposedGain); }
+	void setGain (float proposedGain) override { m_filters.at (m_currentFilterIndex)->setGain (proposedGain); }
 
-	inline void setParameters(float freq, float Q, float proposedGain = 1.0) override
+	inline void setParameters (float freq, float Q, float proposedGain = 1.0) override
 	{
-		m_filters[m_currentFilterIndex.load()]->setParameters(freq, Q, proposedGain);
+		m_filters.at (m_currentFilterIndex.load ())->setParameters (freq, Q, proposedGain);
 	}
 
-	inline float processSample(float in) override
+	inline float processSample (float in) override
 	{
-		return m_filters[m_currentFilterIndex.load()]->processSample(in);
+		return m_filters.at (m_currentFilterIndex.load ())->processSample (in);
 	}
 
-	inline void clear() override { m_filters[m_currentFilterIndex.load()]->clear(); }
+	inline void clear () override { m_filters.at (m_currentFilterIndex.load ())->clear (); }
 
-	void calcCoefficents() override
+	void calcCoefficents () override
 	{
-		m_filters[m_currentFilterIndex.load()]->calcCoefficents();
+		m_filters.at (m_currentFilterIndex.load ())->calcCoefficents ();
 	}
 
-	bool getUseGain(int index) 
+	bool getUseGain (int index)
 	{
-		return m_filters.at(index)->getUseGain();
+		return m_filters.at (index)->getUseGain ();
 	}
 
-	bool getUseQ(int index) 
+	bool getUseQ (int index)
 	{
-		return m_filters.at(index)->getUseQ();
+		return m_filters.at (index)->getUseQ ();
 	}
 
-	bool getUseGain() override
+	bool getUseGain () noexcept override
 	{
 		return false;
 	}
 
-	bool getUseQ() override
+	bool getUseQ () noexcept override
 	{
 		return false;
 	}

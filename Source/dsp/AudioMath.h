@@ -31,19 +31,19 @@ constexpr auto k_2pi = k_pi + k_pi;
 constexpr auto base_a4 = 440.0f;
 
 
-inline float midiNoteFreq(int note) noexcept
+inline float midiNoteFreq (int note) noexcept
 {
-	return 440.0f * powf(2.0f, (note - 69.0f) / 12.0f);
+	return 440.0f * powf (2.0f, (note - 69.0f) / 12.0f);
 }
 
-inline float fraction(float val) noexcept
+inline float fraction (float val) noexcept
 {
 	return val - static_cast<int>(val);
 }
 
-inline float bound(float minval, float val, float maxval) noexcept
+inline float bound (float minval, float val, float maxval) noexcept
 {
-	return fmax(minval, fmin(val, maxval));
+	return static_cast<float>(fmax (minval, fmin (val, maxval)));
 }
 
 //inline int freqNeariestMidiNote( float freq )

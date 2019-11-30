@@ -21,14 +21,14 @@
 
 #include "SspoLookAndFeel.h"
 
-SspoLookAndFeel::SspoLookAndFeel() : LookAndFeel_V4()
+SspoLookAndFeel::SspoLookAndFeel () : LookAndFeel_V4 ()
 {
-	setColour(Slider::thumbColourId, Colours::red);
+	setColour (Slider::thumbColourId, Colours::red);
 }
 
-void SspoLookAndFeel::drawRotarySlider(Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, Slider& slider)
+void SspoLookAndFeel::drawRotarySlider (Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, Slider& slider)
 {
-	const auto radius = jmin(width / 2, height / 2) - 4.0f;
+	const auto radius = jmin (width / 2, height / 2) - 4.0f;
 	const auto centreX = x + width * 0.5f;
 	const auto centreY = y + height * 0.5f;
 	const auto rx = centreX - radius * 0.7f;
@@ -38,53 +38,53 @@ void SspoLookAndFeel::drawRotarySlider(Graphics& g, int x, int y, int width, int
 
 	//draw markings
 	const auto markLength = radius * 0.1f;
-	const auto markThickness = 1.0f;
+	constexpr auto markThickness = 1.0f;
 	const auto divisionRotation = (rotaryEndAngle - rotaryStartAngle) * 0.1f;
-	g.setColour(Colours::whitesmoke);
+	g.setColour (Colours::whitesmoke);
 	for (auto i = 0; i <= 10; ++i)
 	{
 		Path markPath;
-		markPath.addRectangle(-markThickness * 0.5f, -radius, markThickness, markLength);
-		markPath.applyTransform(AffineTransform::rotation(rotaryStartAngle + divisionRotation * i).translated(centreX, centreY));
-		g.fillPath(markPath);
+		markPath.addRectangle (-markThickness * 0.5f, -radius, markThickness, markLength);
+		markPath.applyTransform (AffineTransform::rotation (rotaryStartAngle + divisionRotation * i).translated (centreX, centreY));
+		g.fillPath (markPath);
 	}
 
 
 	//draw knob
-	g.setColour(slider.isEnabled() ? Colours::antiquewhite : Colours::grey);
-	g.fillEllipse(rx, ry, rw, rw);
+	g.setColour (slider.isEnabled () ? Colours::antiquewhite : Colours::grey);
+	g.fillEllipse (rx, ry, rw, rw);
 
 	//draw outline
-	g.setColour(Colours::black);
-	g.drawEllipse(rx, ry, rw, rw, rw * 0.1f);
+	g.setColour (Colours::black);
+	g.drawEllipse (rx, ry, rw, rw, rw * 0.1f);
 
-	if (slider.isEnabled())
+	if (slider.isEnabled ())
 	{
 		//create the pointer
 		Path linePath;
 		Path triPath;
-		auto pointerLength = radius * 0.3f;
-		auto pointerThickness = 2.0f;
-		linePath.addRectangle(-pointerThickness * 0.5f, -radius, pointerThickness, pointerLength);
-		triPath.addTriangle(0, -radius, pointerLength, -radius + pointerLength, -pointerLength, -radius + pointerLength);
+		const auto pointerLength = radius * 0.3f;
+		constexpr auto pointerThickness = 2.0f;
+		linePath.addRectangle (-pointerThickness * 0.5f, -radius, pointerThickness, pointerLength);
+		triPath.addTriangle (0, -radius, pointerLength, -radius + pointerLength, -pointerLength, -radius + pointerLength);
 		//rotate pointer
-		linePath.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
-		triPath.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
-		g.setColour(Colours::black);
-		g.fillPath(triPath);
-		g.setColour(Colours::antiquewhite);
-		g.fillPath(linePath);
+		linePath.applyTransform (AffineTransform::rotation (angle).translated (centreX, centreY));
+		triPath.applyTransform (AffineTransform::rotation (angle).translated (centreX, centreY));
+		g.setColour (Colours::black);
+		g.fillPath (triPath);
+		g.setColour (Colours::antiquewhite);
+		g.fillPath (linePath);
 	}
 }
 
-Label* SspoLookAndFeel::createSliderTextBox(Slider& slider)
+Label* SspoLookAndFeel::createSliderTextBox (Slider& slider)
 {
-	auto l = LookAndFeel_V4::createSliderTextBox(slider);
+	auto l = LookAndFeel_V4::createSliderTextBox (slider);
 
 	if (l)
 	{
-		l->setColour(Label::outlineWhenEditingColourId, Colours::transparentBlack);
-		l->setColour(Label::outlineColourId, Colours::transparentBlack);
+		l->setColour (Label::outlineWhenEditingColourId, Colours::transparentBlack);
+		l->setColour (Label::outlineColourId, Colours::transparentBlack);
 	}
 	return l;
 }

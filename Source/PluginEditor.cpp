@@ -22,104 +22,105 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-//==============================================================================
+ //==============================================================================
 Sspo_filterAudioProcessorEditor::Sspo_filterAudioProcessorEditor (Sspo_filterAudioProcessor& p)
-    : AudioProcessorEditor (&p), processor (p), valueTreeState (p.parameters)
+	: AudioProcessorEditor (&p), processor (p), valueTreeState (p.parameters)
 {
-    // Make sure that before the constructor has finished, you've set the
-    // editor's size to whatever you need it to be.
-	setLookAndFeel(&sspoLookAndFeel);
+	// Make sure that before the constructor has finished, you've set the
+	// editor's size to whatever you need it to be.
+	setLookAndFeel (&sspoLookAndFeel);
 	setSize (300, 130);
-	cutoffLabel.setText("Cutoff", dontSendNotification);
-	cutoffLabel.setJustificationType(Justification::centred);
-	addAndMakeVisible(cutoffLabel);
+	cutoffLabel.setText ("Cutoff", dontSendNotification);
+	cutoffLabel.setJustificationType (Justification::centred);
+	addAndMakeVisible (cutoffLabel);
 
-	addAndMakeVisible(cutoffSlider);
-	cutoffSlider.setSliderStyle(Slider::SliderStyle::RotaryHorizontalVerticalDrag);
-	cutoffSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox,false, 100,30);
-	cutoffSlider.setPopupDisplayEnabled(true, true, this, 1000);
-	cutoffSlider.setTextValueSuffix("Hz");
-	cutoffAttachement = make_unique<SliderAttachment>(valueTreeState, "cutoff", cutoffSlider);
+	addAndMakeVisible (cutoffSlider);
+	cutoffSlider.setSliderStyle (Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+	cutoffSlider.setTextBoxStyle (Slider::TextEntryBoxPosition::NoTextBox, false, 100, 30);
+	cutoffSlider.setPopupDisplayEnabled (true, true, this, 1000);
+	cutoffSlider.setTextValueSuffix ("Hz");
+	cutoffAttachement = make_unique<SliderAttachment> (valueTreeState, "cutoff", cutoffSlider);
 
 
-	resLabel.setText("Q", dontSendNotification);
-	resLabel.setJustificationType(Justification::centred);
-	addAndMakeVisible(resLabel);
+	resLabel.setText ("Q", dontSendNotification);
+	resLabel.setJustificationType (Justification::centred);
+	addAndMakeVisible (resLabel);
 
-	addAndMakeVisible(resSlider);
-	resSlider.setSliderStyle(Slider::SliderStyle::RotaryHorizontalVerticalDrag);
-	resSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox,false,100,30);
-	resSlider.setPopupDisplayEnabled(true, true, this, 1000);
-	resAttachment = make_unique<SliderAttachment>(valueTreeState, "res", resSlider);
+	addAndMakeVisible (resSlider);
+	resSlider.setSliderStyle (Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+	resSlider.setTextBoxStyle (Slider::TextEntryBoxPosition::NoTextBox, false, 100, 30);
+	resSlider.setPopupDisplayEnabled (true, true, this, 1000);
+	resAttachment = make_unique<SliderAttachment> (valueTreeState, "res", resSlider);
 
-	gainLabel.setText("Gain",dontSendNotification);
-	gainLabel.setJustificationType(Justification::centred);
-	addAndMakeVisible(gainLabel);
+	gainLabel.setText ("Gain", dontSendNotification);
+	gainLabel.setJustificationType (Justification::centred);
+	addAndMakeVisible (gainLabel);
 
-	addAndMakeVisible(gainSlider);
-	gainSlider.setSliderStyle(Slider::SliderStyle::RotaryHorizontalVerticalDrag);
-	gainSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, false, 100, 30);
-	gainSlider.setPopupDisplayEnabled(true, true, this, 1000);
-	gainSlider.setTextValueSuffix("dB");
-	gainAttachment = make_unique<SliderAttachment>(valueTreeState, "gain", gainSlider);
+	addAndMakeVisible (gainSlider);
+	gainSlider.setSliderStyle (Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+	gainSlider.setTextBoxStyle (Slider::TextEntryBoxPosition::NoTextBox, false, 100, 30);
+	gainSlider.setPopupDisplayEnabled (true, true, this, 1000);
+	gainSlider.setTextValueSuffix ("dB");
+	gainAttachment = make_unique<SliderAttachment> (valueTreeState, "gain", gainSlider);
 
-	addAndMakeVisible(typeCombo);
+	addAndMakeVisible (typeCombo);
 	StringArray filterTypes;
-	for (auto s : MultiFilter::typeStings()) filterTypes.add(s);
-	typeCombo.addItemList(filterTypes, 1);
-	typeCombo.setSelectedId(1);
-	typeAttachment = make_unique<AudioProcessorValueTreeState::ComboBoxAttachment>(valueTreeState, "type", typeCombo);
+	for (auto s : MultiFilter::typeStings ()) filterTypes.add (s);
+	typeCombo.addItemList (filterTypes, 1);
+	typeCombo.setSelectedId (1);
+	typeAttachment = make_unique<AudioProcessorValueTreeState::ComboBoxAttachment> (valueTreeState, "type", typeCombo);
 
-	gitHubSocialButton.addListener(this);
-	auto githubLogo = ImageCache::getFromMemory(BinaryData::GitHubMark32px_png, BinaryData::GitHubMark32px_pngSize);
-	gitHubSocialButton.setImages(false, true, true, githubLogo, 1.0f, Colours::transparentWhite, githubLogo, 0.7f, Colours::transparentWhite, githubLogo, 0.7f, Colours::transparentWhite);
-	gitHubSocialButton.setComponentID("https://github.com/curlymorphic/");
-	gitHubSocialButton.setTooltip(TRANS("Find resources on Github"));
-	addAndMakeVisible(gitHubSocialButton);
+	gitHubSocialButton.addListener (this);
+	auto githubLogo = ImageCache::getFromMemory (BinaryData::GitHubMark32px_png, BinaryData::GitHubMark32px_pngSize);
+	gitHubSocialButton.setImages (false, true, true, githubLogo, 1.0f, Colours::transparentWhite, githubLogo, 0.7f, Colours::transparentWhite, githubLogo, 0.7f, Colours::transparentWhite);
+	gitHubSocialButton.setComponentID ("https://github.com/curlymorphic/");
+	gitHubSocialButton.setTooltip (TRANS ("Find resources on Github"));
+	addAndMakeVisible (gitHubSocialButton);
 
-	valueTreeState.addParameterListener("type", this);
-	parameterChanged("type", 0);
+	valueTreeState.addParameterListener ("type", this);
+	parameterChanged ("type", 0);
 }
 
-Sspo_filterAudioProcessorEditor::~Sspo_filterAudioProcessorEditor()
+Sspo_filterAudioProcessorEditor::~Sspo_filterAudioProcessorEditor ()
 {
-	setLookAndFeel(nullptr);
+
 }
 
 //==============================================================================
 void Sspo_filterAudioProcessorEditor::paint (Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
+	// (Our component is opaque, so we must completely fill the background with a solid colour)
+	g.fillAll (getLookAndFeel ().findColour (ResizableWindow::backgroundColourId));
 
-    g.setColour (Colours::white);
-    g.setFont (15.0f);
-	cutoffSlider.setBounds(15, 0, 85, 85);
-	resSlider.setBounds(100, 0, 85, 85);
-	cutoffLabel.setBounds(15, 85, 85, 15);
-	resLabel.setBounds(100, 85, 85, 15);
-	typeCombo.setBounds(200, 100, 100, 30);
-	gainSlider.setBounds(185, 0, 85, 85);
-	gainLabel.setBounds(185, 85, 85, 15);
-	gitHubSocialButton.setBounds(0, 98, 32, 32);
+	g.setColour (Colours::white);
+	g.setFont (15.0f);
+	cutoffSlider.setBounds (15, 0, 85, 85);
+	resSlider.setBounds (100, 0, 85, 85);
+	cutoffLabel.setBounds (15, 85, 85, 15);
+	resLabel.setBounds (100, 85, 85, 15);
+	typeCombo.setBounds (200, 100, 100, 30);
+	gainSlider.setBounds (185, 0, 85, 85);
+	gainLabel.setBounds (185, 85, 85, 15);
+	gitHubSocialButton.setBounds (0, 98, 32, 32);
 }
 
-void Sspo_filterAudioProcessorEditor::resized()
+void Sspo_filterAudioProcessorEditor::resized ()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
+	// This is generally where you'll want to lay out the positions of any
+	// subcomponents in your editor..
 }
 
-void Sspo_filterAudioProcessorEditor::parameterChanged(const String& parameterID, float newValue)
+void Sspo_filterAudioProcessorEditor::parameterChanged (const String& parameterID, float newValue)
 {
-	gainSlider.setEnabled(processor.getFilterUseGain(static_cast<int>(newValue)));
-	resSlider.setEnabled(processor.getFilterUseQ(static_cast<int>(newValue)));
+	ignoreUnused (parameterID);
+	gainSlider.setEnabled (processor.getFilterUseGain (static_cast<int>(newValue)));
+	resSlider.setEnabled (processor.getFilterUseQ (static_cast<int>(newValue)));
 }
 
-void Sspo_filterAudioProcessorEditor::buttonClicked(Button*)
+void Sspo_filterAudioProcessorEditor::buttonClicked (Button*)
 {
-	URL url(gitHubSocialButton.getComponentID());
-	if (url.isWellFormed()) {
-		url.launchInDefaultBrowser();
+	URL url (gitHubSocialButton.getComponentID ());
+	if (url.isWellFormed ()) {
+		url.launchInDefaultBrowser ();
 	}
 }

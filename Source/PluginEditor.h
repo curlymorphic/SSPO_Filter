@@ -33,20 +33,20 @@ typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 //==============================================================================
 /**
 */
-class Sspo_filterAudioProcessorEditor  : public AudioProcessorEditor, public AudioProcessorValueTreeState::Listener, ImageButton::Listener
+class Sspo_filterAudioProcessorEditor : public AudioProcessorEditor, public AudioProcessorValueTreeState::Listener, ImageButton::Listener
 {
 public:
-    Sspo_filterAudioProcessorEditor (Sspo_filterAudioProcessor&);
-    ~Sspo_filterAudioProcessorEditor();
+	Sspo_filterAudioProcessorEditor (Sspo_filterAudioProcessor&);
+	~Sspo_filterAudioProcessorEditor ();
 
-    //==============================================================================
-    void paint (Graphics&) override;
-    void resized() override;
+	//==============================================================================
+	void paint (Graphics&) override;
+	void resized () override;
 
 private:
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
-    Sspo_filterAudioProcessor& processor;
+	// This reference is provided as a quick way for your editor to
+	// access the processor object that created it.
+	Sspo_filterAudioProcessor& processor;
 
 	AudioProcessorValueTreeState& valueTreeState;
 	Label cutoffLabel;
@@ -64,13 +64,13 @@ private:
 
 	SspoLookAndFeel sspoLookAndFeel;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sspo_filterAudioProcessorEditor)
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Sspo_filterAudioProcessorEditor)
 
 		// Inherited via Listener
-		virtual void parameterChanged(const String& parameterID, float newValue) override;
+		void parameterChanged (const String& parameterID, float newValue) override;
 
 	// Inherited via Listener
-	virtual void buttonClicked(Button*) override;
+	void buttonClicked (Button*) override;
 };
 
 

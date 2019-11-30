@@ -21,44 +21,44 @@
 
 #pragma once
 
-/**
-The base AudioProcess class to be inherited by all audio processing classes.
-AudioProcess classes are designed to process a single channel of audio,
-*/
+ /**
+ The base AudioProcess class to be inherited by all audio processing classes.
+ AudioProcess classes are designed to process a single channel of audio,
+ */
 class AudioProcess
 {
 public:
-	AudioProcess() 
+	AudioProcess () noexcept
 	{
 
 	}
 
-	AudioProcess(int sr) 
+	AudioProcess (int sr)
 	{
 		m_sampleRate = sr;
 	}
 
-	virtual ~AudioProcess()
+	virtual ~AudioProcess ()
 	{
 
 	}
 
 
-	virtual void setSampleRate(int sr) 
+	virtual void setSampleRate (int sr)
 	{
-		if ( sr > 0 ) m_sampleRate = sr;
+		if (sr > 0) m_sampleRate = sr;
 	}
 
-	virtual float processSample(float in) = 0;
+	virtual float processSample (float in) = 0;
 
-	virtual void processBlock(float* block, int blockSize)
+	virtual void processBlock (float* block, int blockSize)
 	{
 		if (block)
 		{
 			for (auto i = 0; i < blockSize; ++i)
 			{
 				auto data = block[i];
-				data = processSample(data);
+				data = processSample (data);
 				block[i] = data;
 			}
 		}
@@ -66,5 +66,5 @@ public:
 
 
 protected:
-	int m_sampleRate = 1;
+	int m_sampleRate{ 0 };
 };
