@@ -80,10 +80,10 @@ private:
 	//==============================================================================
 
 
-	float* resParameter = nullptr;
-	float* cutoffParameter = nullptr;
-	float* typeParameter = nullptr;
-	float* gainParameter = nullptr;
+	std::atomic<float>* resParameter = nullptr;
+	std::atomic<float>* cutoffParameter = nullptr;
+	std::atomic<float>* typeParameter = nullptr;
+	std::atomic<float>* gainParameter = nullptr;
 
 
 	std::vector<std::unique_ptr<MultiFilter>> m_filters;
